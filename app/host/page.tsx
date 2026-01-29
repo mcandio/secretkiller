@@ -49,6 +49,7 @@ export default function HostPage() {
   const [rooms, setRooms] = useState<string>(DEFAULT_ROOMS.join('\n'))
   const [objects, setObjects] = useState<string>(DEFAULT_OBJECTS.join('\n'))
   const [hostPin, setHostPin] = useState<string>('')
+  const [roomRotationInterval, setRoomRotationInterval] = useState<string>('1')
   const [pinVerified, setPinVerified] = useState(false)
   const [pinInput, setPinInput] = useState('')
   const [error, setError] = useState<string>('')
@@ -96,6 +97,13 @@ export default function HostPage() {
   const handleGenerate = async () => {
     setError('')
     
+    // Parse room rotation interval
+    const rotationInterval = parseInt(roomRotationInterval, 10)
+    if (isNaN(rotationInterval) || rotationInterval < 1) {
+      setError('Room rotation interval must be at least 1 minute')
+      return
+    }
+    
     const names = playerNames
       .split('\n')
       .map((n) => n.trim())
@@ -119,7 +127,7 @@ export default function HostPage() {
     try {
       const pin = hostPin.trim().length === 4 ? hostPin.trim() : undefined
       // generateGame now syncs to server automatically
-      const newState = await generateGame(names, roomsList, objectsList, pin)
+      const newState = await generateGame(names, roomsList, objectsList, pin, undefined, rotationInterval)
       setGameState(newState)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate game')
@@ -242,15 +250,26 @@ export default function HostPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {gameState.players.map((player) => {
                     const claimed = gameState.claimedByName[player.nameNormalized]
+                    // Check if player is eliminated (appears as a value in eliminations)
+                    const isEliminated = gameState.eliminations && Object.values(gameState.eliminations).includes(player.nameNormalized)
                     return (
                       <div
                         key={player.nameNormalized}
                         className={`p-3 rounded-lg ${
-                          claimed ? 'bg-green-200' : 'bg-gray-100'
+                          isEliminated 
+                            ? 'bg-red-200 border-2 border-red-500' 
+                            : claimed 
+                              ? 'bg-green-200' 
+                              : 'bg-gray-100'
                         }`}
                       >
-                        <span className="font-semibold">{player.name}</span>
-                        {claimed && (
+                        <span className={`font-semibold ${isEliminated ? 'text-red-900 line-through' : ''}`}>
+                          {player.name}
+                        </span>
+                        {isEliminated && (
+                          <span className="ml-2 text-red-700 font-bold">💀 {t.host.eliminatedBadge}</span>
+                        )}
+                        {!isEliminated && claimed && (
                           <span className="ml-2 text-green-700 font-bold">{t.host.claimedBadge}</span>
                         )}
                       </div>
@@ -317,6 +336,21 @@ export default function HostPage() {
                 placeholder="phone&#10;keys&#10;..."
                 className="w-full p-4 border-2 border-gray-300 rounded-lg text-lg min-h-[150px]"
               />
+            </div>
+
+            <div>
+              <label className="block text-xl font-semibold mb-2">
+                {t.host.roomRotationIntervalLabel}
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={roomRotationInterval}
+                onChange={(e) => setRoomRotationInterval(e.target.value)}
+                className="w-full p-4 border-2 border-gray-300 rounded-lg text-xl text-center"
+                placeholder="1"
+              />
+              <p className="text-sm text-gray-600 mt-1">{t.host.roomRotationIntervalDescription}</p>
             </div>
 
             <div>

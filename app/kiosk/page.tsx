@@ -11,6 +11,7 @@ import {
   saveGame,
   syncGameToServer,
   getCurrentAssignment,
+  getTimeUntilNextRoomChange,
   type GameStateV1,
   type Assignment,
   type CurrentAssignment,
@@ -27,6 +28,7 @@ export default function KioskPage() {
   const [gameState, setGameState] = useState<GameStateV1 | null>(null)
   const [selectedName, setSelectedName] = useState<string>('')
   const [mission, setMission] = useState<CurrentAssignment | null>(null)
+  const [timeUntilRoomChange, setTimeUntilRoomChange] = useState<number | null>(null)
   const [showPrivacyShield, setShowPrivacyShield] = useState(false)
   const [showHostLink, setShowHostLink] = useState(false)
   const [showRoomEntry, setShowRoomEntry] = useState(false)
@@ -70,11 +72,17 @@ export default function KioskPage() {
               setMission(currentAssignment)
             }
           }
+          
+          // Update time until next room change
+          if (selectedName) {
+            const timeUntil = getTimeUntilNextRoomChange(mergedState)
+            setTimeUntilRoomChange(timeUntil)
+          }
         }
       } catch (error) {
         console.error('Error polling server:', error)
       }
-    }, 2000) // Poll every 2 seconds
+    }, 1000) // Poll every second for smoother timer updates
 
     return () => clearInterval(pollInterval)
   }, [gameState?.roomNumber, mission, selectedName])
@@ -226,6 +234,14 @@ export default function KioskPage() {
               ⚠️ {t.kiosk.doNotSay}
             </p>
           </div>
+
+          {timeUntilRoomChange !== null && timeUntilRoomChange > 0 && (
+            <div className="bg-yellow-300 border-2 border-yellow-600 rounded-lg p-4 mb-4">
+              <p className="text-xl md:text-2xl font-bold text-yellow-900">
+                {t.instructions.roomChangeIn} {Math.ceil(timeUntilRoomChange / 1000)} {t.instructions.seconds}
+              </p>
+            </div>
+          )}
 
           <div className="space-y-6">
             <div>

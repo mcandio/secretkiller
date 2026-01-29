@@ -23,6 +23,7 @@ export type GameStateV1 = {
   assignmentsByName: Record<string, Assignment>; // key=nameNormalized
   claimedByName: Record<string, boolean>;
   eliminations: Record<string, string>; // key=killer nameNormalized, value=eliminated nameNormalized
+  roomRotationIntervalMinutes?: number; // Default: 1 minute
 };
 
 export type RoomConfig = {
@@ -32,6 +33,7 @@ export type RoomConfig = {
   objects: string[];
   hostPin?: string;
   createdAt: number;
+  roomRotationIntervalMinutes?: number; // Default: 1 minute
 };
 
 // Storage keys
@@ -440,7 +442,7 @@ export function areAllPlayersClaimed(state: GameStateV1): boolean {
 
 /**
  * Get the current room for a player based on time rotation
- * Rooms rotate every 5 minutes (300000 ms) once all players have claimed
+ * Rooms rotate every X minutes (configurable) once all players have claimed
  */
 export function getCurrentRoom(
   state: GameStateV1,
@@ -460,8 +462,9 @@ export function getCurrentRoom(
   // Calculate time since game creation (we'll use this as the base time)
   const elapsedMs = currentTime - state.createdAt;
   
-  // Rotate every 5 minutes (300000 ms)
-  const rotationInterval = 5 * 60 * 1000; // 5 minutes
+  // Rotate every X minutes (configurable, default: 1 minute)
+  const rotationIntervalMinutes = state.roomRotationIntervalMinutes ?? 1;
+  const rotationInterval = rotationIntervalMinutes * 60 * 1000; // Convert to milliseconds
   const rotationIndex = Math.floor(elapsedMs / rotationInterval);
   
   // Get available rooms (use the shuffled rooms from state)
@@ -470,6 +473,31 @@ export function getCurrentRoom(
   // Rotate through rooms deterministically
   const roomIndex = rotationIndex % availableRooms.length;
   return availableRooms[roomIndex];
+}
+
+/**
+ * Get time remaining until next room change (in milliseconds)
+ * Returns null if rotation is not active (not all players claimed)
+ */
+export function getTimeUntilNextRoomChange(
+  state: GameStateV1,
+  currentTime: number = Date.now()
+): number | null {
+  // If not all players have claimed, rotation is not active
+  if (!areAllPlayersClaimed(state)) {
+    return null;
+  }
+
+  const rotationIntervalMinutes = state.roomRotationIntervalMinutes ?? 1;
+  const rotationInterval = rotationIntervalMinutes * 60 * 1000; // Convert to milliseconds
+  
+  // Calculate time since game creation
+  const elapsedMs = currentTime - state.createdAt;
+  
+  // Calculate time until next rotation
+  const timeUntilNext = rotationInterval - (elapsedMs % rotationInterval);
+  
+  return timeUntilNext;
 }
 
 /**
@@ -570,6 +598,7 @@ export function generateGameFromConfig(
     assignmentsByName,
     claimedByName: {}, // Start fresh for each device
     eliminations: {}, // Track who eliminated whom
+    roomRotationIntervalMinutes: config.roomRotationIntervalMinutes ?? 1, // Default: 1 minute
   };
 
   saveGame(state);
@@ -584,7 +613,8 @@ export async function generateGame(
   rooms: string[],
   objects: string[],
   hostPin?: string,
-  roomNumber?: string
+  roomNumber?: string,
+  roomRotationIntervalMinutes?: number
 ): Promise<GameStateV1> {
   if (playerNames.length < 3) {
     throw new Error("At least 3 players required");
@@ -601,6 +631,7 @@ export async function generateGame(
     objects,
     hostPin,
     createdAt: Date.now(),
+    roomRotationIntervalMinutes: roomRotationIntervalMinutes ?? 1, // Default: 1 minute
   };
   saveRoomConfig(config);
 

@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { loadActiveGame, getClaimedPlayerName, type Assignment, type CurrentAssignment, loadGameFromServer, loadRoomConfigFromServer, generateGameFromConfig, saveGame, syncGameToServer, loadGameByRoom, eliminateTarget, normalizeName, getCurrentAssignment } from '@/lib/game'
+import { loadActiveGame, getClaimedPlayerName, type Assignment, type CurrentAssignment, loadGameFromServer, loadRoomConfigFromServer, generateGameFromConfig, saveGame, syncGameToServer, loadGameByRoom, eliminateTarget, normalizeName, getCurrentAssignment, getTimeUntilNextRoomChange } from '@/lib/game'
 import Navigation from '@/components/Navigation'
 import RoomEntry from '@/components/RoomEntry'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -20,6 +20,7 @@ function HomePageContent() {
   const [joiningRoom, setJoiningRoom] = useState(false)
   const [eliminating, setEliminating] = useState(false)
   const [eliminationMessage, setEliminationMessage] = useState<string | null>(null)
+  const [timeUntilRoomChange, setTimeUntilRoomChange] = useState<number | null>(null)
 
   useEffect(() => {
     setMounted(true)
@@ -317,6 +318,14 @@ function HomePageContent() {
                 ⚠️ {t.kiosk.doNotSay}
               </p>
             </div>
+
+            {timeUntilRoomChange !== null && timeUntilRoomChange > 0 && (
+              <div className="bg-yellow-300 border-2 border-yellow-600 rounded-lg p-4 mb-4">
+                <p className="text-xl md:text-2xl font-bold text-yellow-900">
+                  {t.instructions.roomChangeIn} {Math.ceil(timeUntilRoomChange / 1000)} {t.instructions.seconds}
+                </p>
+              </div>
+            )}
 
             <div className="space-y-6">
               <div>
