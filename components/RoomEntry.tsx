@@ -1,7 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { loadGameByRoom, loadGameFromServer, saveGame, syncGameToServer } from '@/lib/game'
+import { 
+  loadGameByRoom, 
+  loadGameFromServer, 
+  loadRoomConfigFromServer,
+  generateGameFromConfig,
+  saveGame, 
+  syncGameToServer 
+} from '@/lib/game'
 import { useRouter } from 'next/navigation'
 
 interface RoomEntryProps {
@@ -39,15 +46,26 @@ export default function RoomEntry({ onJoin, initialRoomNumber }: RoomEntryProps)
     }
 
     try {
-      // Try to load from server first
+      // Try to load game state from server first
       let gameState = await loadGameFromServer(trimmed)
       
-      // If not on server, try local generation
+      // If game state not found, try to load room config and regenerate
       if (!gameState) {
-        gameState = loadGameByRoom(trimmed)
-        if (gameState) {
-          // Sync local game to server
+        const roomConfig = await loadRoomConfigFromServer(trimmed)
+        
+        if (roomConfig) {
+          // Regenerate game state deterministically from room config
+          gameState = generateGameFromConfig(roomConfig, trimmed)
+          
+          // Sync regenerated game state to server
           await syncGameToServer(gameState)
+        } else {
+          // Try local generation as fallback
+          gameState = loadGameByRoom(trimmed)
+          if (gameState) {
+            // Sync local game to server
+            await syncGameToServer(gameState)
+          }
         }
       }
       

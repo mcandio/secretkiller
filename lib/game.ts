@@ -263,6 +263,51 @@ export function resetGame(): void {
 }
 
 /**
+ * Sync room config to server
+ */
+export async function syncRoomConfigToServer(config: RoomConfig): Promise<boolean> {
+  try {
+    const response = await fetch(`/api/room/${config.roomNumber}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config),
+    });
+    
+    if (!response.ok) {
+      console.error('Failed to sync room config to server');
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error syncing room config to server:', error);
+    return false;
+  }
+}
+
+/**
+ * Load room config from server
+ */
+export async function loadRoomConfigFromServer(roomNumber: string): Promise<RoomConfig | null> {
+  try {
+    const response = await fetch(`/api/room/${roomNumber}`);
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null;
+      }
+      throw new Error('Failed to load room config from server');
+    }
+    
+    const config = await response.json() as RoomConfig;
+    return config;
+  } catch (error) {
+    console.error('Error loading room config from server:', error);
+    return null;
+  }
+}
+
+/**
  * Sync game state to server
  */
 export async function syncGameToServer(state: GameStateV1): Promise<boolean> {
@@ -355,7 +400,7 @@ export async function markClaimed(nameNormalized: string): Promise<GameStateV1 |
 /**
  * Generate game state from room config (deterministic)
  */
-function generateGameFromConfig(
+export function generateGameFromConfig(
   config: RoomConfig,
   roomNumber: string
 ): GameStateV1 {
@@ -432,13 +477,13 @@ function generateGameFromConfig(
 /**
  * Generate a new game state with room number
  */
-export function generateGame(
+export async function generateGame(
   playerNames: string[],
   rooms: string[],
   objects: string[],
   hostPin?: string,
   roomNumber?: string
-): GameStateV1 {
+): Promise<GameStateV1> {
   if (playerNames.length < 3) {
     throw new Error("At least 3 players required");
   }
@@ -457,6 +502,14 @@ export function generateGame(
   };
   saveRoomConfig(config);
 
+  // Sync room config to server (critical for Vercel serverless)
+  await syncRoomConfigToServer(config);
+
   // Generate game state deterministically
-  return generateGameFromConfig(config, finalRoomNumber);
+  const gameState = generateGameFromConfig(config, finalRoomNumber);
+  
+  // Also sync game state to server
+  await syncGameToServer(gameState);
+  
+  return gameState;
 }

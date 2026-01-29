@@ -8,7 +8,6 @@ import {
   resetGame,
   generateGame,
   saveGame,
-  syncGameToServer,
   type GameStateV1,
 } from '@/lib/game'
 import Navigation from '@/components/Navigation'
@@ -117,11 +116,8 @@ export default function HostPage() {
 
     try {
       const pin = hostPin.trim().length === 4 ? hostPin.trim() : undefined
-      const newState = generateGame(names, roomsList, objectsList, pin)
-      
-      // Sync to server
-      await syncGameToServer(newState)
-      
+      // generateGame now syncs to server automatically
+      const newState = await generateGame(names, roomsList, objectsList, pin)
       setGameState(newState)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate game')
