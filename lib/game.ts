@@ -432,6 +432,73 @@ export function clearClaimedPlayer(): void {
 }
 
 /**
+ * Check if all players have claimed their missions
+ */
+export function areAllPlayersClaimed(state: GameStateV1): boolean {
+  return state.players.every(player => state.claimedByName[player.nameNormalized] === true);
+}
+
+/**
+ * Get the current room for a player based on time rotation
+ * Rooms rotate every 5 minutes (300000 ms) once all players have claimed
+ */
+export function getCurrentRoom(
+  state: GameStateV1,
+  playerNameNormalized: string,
+  currentTime: number = Date.now()
+): string {
+  const assignment = state.assignmentsByName[playerNameNormalized];
+  if (!assignment) {
+    return 'unknown room';
+  }
+
+  // If not all players have claimed, return the base room
+  if (!areAllPlayersClaimed(state)) {
+    return assignment.room;
+  }
+
+  // Calculate time since game creation (we'll use this as the base time)
+  const elapsedMs = currentTime - state.createdAt;
+  
+  // Rotate every 5 minutes (300000 ms)
+  const rotationInterval = 5 * 60 * 1000; // 5 minutes
+  const rotationIndex = Math.floor(elapsedMs / rotationInterval);
+  
+  // Get available rooms (use the shuffled rooms from state)
+  const availableRooms = state.rooms.length > 0 ? state.rooms : [assignment.room];
+  
+  // Rotate through rooms deterministically
+  const roomIndex = rotationIndex % availableRooms.length;
+  return availableRooms[roomIndex];
+}
+
+/**
+ * Get current assignment with rotating room
+ */
+export type CurrentAssignment = {
+  targetName: string;
+  room: string; // Current room (may rotate)
+  object: string;
+};
+
+export function getCurrentAssignment(
+  state: GameStateV1,
+  playerNameNormalized: string,
+  currentTime: number = Date.now()
+): CurrentAssignment | null {
+  const assignment = state.assignmentsByName[playerNameNormalized];
+  if (!assignment) {
+    return null;
+  }
+
+  return {
+    targetName: assignment.targetName,
+    room: getCurrentRoom(state, playerNameNormalized, currentTime),
+    object: assignment.object,
+  };
+}
+
+/**
  * Generate game state from room config (deterministic)
  */
 export function generateGameFromConfig(

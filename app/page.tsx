@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { loadActiveGame, getClaimedPlayerName, type Assignment, loadGameFromServer, loadRoomConfigFromServer, generateGameFromConfig, saveGame, syncGameToServer, loadGameByRoom, eliminateTarget, normalizeName } from '@/lib/game'
+import { loadActiveGame, getClaimedPlayerName, type Assignment, type CurrentAssignment, loadGameFromServer, loadRoomConfigFromServer, generateGameFromConfig, saveGame, syncGameToServer, loadGameByRoom, eliminateTarget, normalizeName, getCurrentAssignment } from '@/lib/game'
 import Navigation from '@/components/Navigation'
 import RoomEntry from '@/components/RoomEntry'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -16,7 +16,7 @@ function HomePageContent() {
   const [mounted, setMounted] = useState(false)
   const [showRoomEntry, setShowRoomEntry] = useState(false)
   const [showMission, setShowMission] = useState(false)
-  const [myMission, setMyMission] = useState<Assignment | null>(null)
+  const [myMission, setMyMission] = useState<CurrentAssignment | null>(null)
   const [joiningRoom, setJoiningRoom] = useState(false)
   const [eliminating, setEliminating] = useState(false)
   const [eliminationMessage, setEliminationMessage] = useState<string | null>(null)
@@ -30,14 +30,14 @@ function HomePageContent() {
     if (game) {
       const claimedPlayerName = getClaimedPlayerName()
       if (claimedPlayerName) {
-        const assignment = game.assignmentsByName[claimedPlayerName]
-        if (assignment) {
-          setMyMission(assignment)
+        const currentAssignment = getCurrentAssignment(game, claimedPlayerName)
+        if (currentAssignment) {
+          setMyMission(currentAssignment)
         }
       }
     }
 
-    // Poll for game state updates to reflect eliminations
+    // Poll for game state updates to reflect eliminations and room rotations
     const pollInterval = setInterval(async () => {
       const currentGame = loadActiveGame()
       if (currentGame) {
@@ -46,9 +46,10 @@ function HomePageContent() {
           saveGame(serverState)
           const claimedPlayerName = getClaimedPlayerName()
           if (claimedPlayerName) {
-            const assignment = serverState.assignmentsByName[claimedPlayerName]
-            if (assignment) {
-              setMyMission(assignment)
+            // Get current assignment with rotating room
+            const currentAssignment = getCurrentAssignment(serverState, claimedPlayerName)
+            if (currentAssignment) {
+              setMyMission(currentAssignment)
               setHasActiveGame(true)
             }
           }
@@ -127,10 +128,10 @@ function HomePageContent() {
       const updatedState = await eliminateTarget(claimedPlayerName, targetNameNormalized)
       
       if (updatedState) {
-        // Update local mission
-        const newAssignment = updatedState.assignmentsByName[claimedPlayerName]
-        if (newAssignment) {
-          setMyMission(newAssignment)
+        // Update local mission with current room
+        const currentAssignment = getCurrentAssignment(updatedState, claimedPlayerName)
+        if (currentAssignment) {
+          setMyMission(currentAssignment)
           setEliminationMessage(t.instructions.eliminationSuccess)
           setTimeout(() => setEliminationMessage(null), 5000)
         }

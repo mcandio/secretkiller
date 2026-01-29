@@ -10,8 +10,10 @@ import {
   markClaimed,
   saveGame,
   syncGameToServer,
+  getCurrentAssignment,
   type GameStateV1,
   type Assignment,
+  type CurrentAssignment,
 } from '@/lib/game'
 import Navigation from '@/components/Navigation'
 import RoomEntry from '@/components/RoomEntry'
@@ -24,7 +26,7 @@ export default function KioskPage() {
   const router = useRouter()
   const [gameState, setGameState] = useState<GameStateV1 | null>(null)
   const [selectedName, setSelectedName] = useState<string>('')
-  const [mission, setMission] = useState<Assignment | null>(null)
+  const [mission, setMission] = useState<CurrentAssignment | null>(null)
   const [showPrivacyShield, setShowPrivacyShield] = useState(false)
   const [showHostLink, setShowHostLink] = useState(false)
   const [showRoomEntry, setShowRoomEntry] = useState(false)
@@ -41,7 +43,7 @@ export default function KioskPage() {
     }
   }, [])
 
-  // Poll server for updates
+  // Poll server for updates and update mission room if visible
   useEffect(() => {
     if (!gameState?.roomNumber) return
 
@@ -60,6 +62,14 @@ export default function KioskPage() {
           }
           setGameState(mergedState)
           saveGame(mergedState)
+          
+          // Update mission room if mission is currently visible
+          if (mission && selectedName) {
+            const currentAssignment = getCurrentAssignment(mergedState, selectedName)
+            if (currentAssignment) {
+              setMission(currentAssignment)
+            }
+          }
         }
       } catch (error) {
         console.error('Error polling server:', error)
@@ -67,7 +77,7 @@ export default function KioskPage() {
     }, 2000) // Poll every 2 seconds
 
     return () => clearInterval(pollInterval)
-  }, [gameState?.roomNumber])
+  }, [gameState?.roomNumber, mission, selectedName])
 
   const handleHideMission = useCallback(async () => {
     if (!gameState || !selectedName) return
@@ -130,9 +140,10 @@ export default function KioskPage() {
     )
     if (!player) return
 
-    const assignment = gameState.assignmentsByName[player.nameNormalized]
-    if (assignment) {
-      setMission(assignment)
+    // Get current assignment with rotating room
+    const currentAssignment = getCurrentAssignment(gameState, player.nameNormalized)
+    if (currentAssignment) {
+      setMission(currentAssignment)
       setShowPrivacyShield(false)
     }
   }
