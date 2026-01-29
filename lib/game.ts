@@ -22,6 +22,7 @@ export type GameStateV1 = {
   objects: string[];
   assignmentsByName: Record<string, Assignment>; // key=nameNormalized
   claimedByName: Record<string, boolean>;
+  eliminations: Record<string, string>; // key=killer nameNormalized, value=eliminated nameNormalized
 };
 
 export type RoomConfig = {
@@ -501,6 +502,7 @@ export function generateGameFromConfig(
     objects: shuffledObjects,
     assignmentsByName,
     claimedByName: {}, // Start fresh for each device
+    eliminations: {}, // Track who eliminated whom
   };
 
   saveGame(state);
@@ -545,4 +547,88 @@ export async function generateGame(
   await syncGameToServer(gameState);
   
   return gameState;
+}
+
+/**
+ * Eliminate a target and inherit their mission
+ * Returns the updated game state with the killer's new mission
+ */
+export async function eliminateTarget(
+  killerNameNormalized: string,
+  targetNameNormalized: string
+): Promise<GameStateV1 | null> {
+  const state = loadActiveGame();
+  if (!state) {
+    return null;
+  }
+
+  // Check if killer exists and has a mission
+  const killerAssignment = state.assignmentsByName[killerNameNormalized];
+  if (!killerAssignment) {
+    throw new Error("Killer not found in game");
+  }
+
+  // Check if target exists and has a mission
+  const targetAssignment = state.assignmentsByName[targetNameNormalized];
+  if (!targetAssignment) {
+    throw new Error("Target not found in game");
+  }
+
+  // Verify that the target is actually the killer's target
+  const killerTargetNormalized = normalizeName(killerAssignment.targetName)
+  if (killerTargetNormalized !== targetNameNormalized) {
+    throw new Error("Target is not the killer's assigned target");
+  }
+
+  // Check if target was already eliminated
+  const alreadyEliminated = Object.values(state.eliminations).includes(targetNameNormalized);
+  if (alreadyEliminated) {
+    throw new Error("Target already eliminated");
+  }
+
+  // Record the elimination
+  state.eliminations[killerNameNormalized] = targetNameNormalized;
+
+  // Inherit the target's mission
+  // The killer's new target becomes the eliminated target's target
+  state.assignmentsByName[killerNameNormalized] = {
+    targetName: targetAssignment.targetName,
+    room: targetAssignment.room,
+    object: targetAssignment.object,
+  };
+
+  // Save locally
+  saveGame(state);
+
+  // Sync to server
+  await syncEliminationToServer(state.roomNumber, killerNameNormalized, targetNameNormalized);
+
+  return state;
+}
+
+/**
+ * Sync elimination to server
+ */
+export async function syncEliminationToServer(
+  roomNumber: string,
+  killerNameNormalized: string,
+  targetNameNormalized: string
+): Promise<GameStateV1 | null> {
+  try {
+    const response = await fetch(`/api/game/${roomNumber}/eliminate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ killerNameNormalized, targetNameNormalized }),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to sync elimination to server');
+    }
+    
+    const result = await response.json();
+    return result.state as GameStateV1;
+  } catch (error) {
+    console.error('Error syncing elimination to server:', error);
+    return null;
+  }
 }

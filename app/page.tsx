@@ -1,19 +1,25 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
-import { loadActiveGame, getClaimedPlayerName, type Assignment } from '@/lib/game'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { loadActiveGame, getClaimedPlayerName, type Assignment, loadGameFromServer, loadRoomConfigFromServer, generateGameFromConfig, saveGame, syncGameToServer, loadGameByRoom, eliminateTarget, normalizeName } from '@/lib/game'
 import Navigation from '@/components/Navigation'
 import RoomEntry from '@/components/RoomEntry'
 import { useLanguage } from '@/contexts/LanguageContext'
 
-export default function HomePage() {
+function HomePageContent() {
   const { t } = useLanguage()
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [hasActiveGame, setHasActiveGame] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [showRoomEntry, setShowRoomEntry] = useState(false)
   const [showMission, setShowMission] = useState(false)
   const [myMission, setMyMission] = useState<Assignment | null>(null)
+  const [joiningRoom, setJoiningRoom] = useState(false)
+  const [eliminating, setEliminating] = useState(false)
+  const [eliminationMessage, setEliminationMessage] = useState<string | null>(null)
 
   useEffect(() => {
     setMounted(true)
@@ -30,7 +36,116 @@ export default function HomePage() {
         }
       }
     }
-  }, [])
+
+    // Poll for game state updates to reflect eliminations
+    const pollInterval = setInterval(async () => {
+      const currentGame = loadActiveGame()
+      if (currentGame) {
+        const serverState = await loadGameFromServer(currentGame.roomNumber)
+        if (serverState) {
+          saveGame(serverState)
+          const claimedPlayerName = getClaimedPlayerName()
+          if (claimedPlayerName) {
+            const assignment = serverState.assignmentsByName[claimedPlayerName]
+            if (assignment) {
+              setMyMission(assignment)
+              setHasActiveGame(true)
+            }
+          }
+        }
+      }
+    }, 2000)
+
+    // Check for room parameter in URL and auto-join
+    if (typeof window !== 'undefined' && !game && !joiningRoom) {
+      const roomParam = searchParams.get('room')
+      if (roomParam && roomParam.length >= 4) {
+        handleAutoJoinRoom(roomParam)
+      }
+    }
+
+    return () => clearInterval(pollInterval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
+
+  const handleAutoJoinRoom = async (roomNumber: string) => {
+    setJoiningRoom(true)
+    try {
+      // Try to load game state from server first
+      let gameState = await loadGameFromServer(roomNumber)
+      
+      // If game state not found, try to load room config and regenerate
+      if (!gameState) {
+        const roomConfig = await loadRoomConfigFromServer(roomNumber)
+        
+        if (roomConfig) {
+          // Regenerate game state deterministically from room config
+          gameState = generateGameFromConfig(roomConfig, roomNumber)
+          
+          // Sync regenerated game state to server
+          await syncGameToServer(gameState)
+        } else {
+          // Try local generation as fallback
+          gameState = loadGameByRoom(roomNumber)
+          if (gameState) {
+            // Sync local game to server
+            await syncGameToServer(gameState)
+          }
+        }
+      }
+      
+      if (gameState) {
+        // Save as active game
+        saveGame(gameState)
+        setHasActiveGame(true)
+        
+        // Remove room parameter from URL
+        router.replace('/')
+        
+        // Redirect to kiosk
+        router.push('/kiosk')
+      }
+    } catch (err) {
+      console.error('Error auto-joining room:', err)
+    } finally {
+      setJoiningRoom(false)
+    }
+  }
+
+  const handleEliminateTarget = async () => {
+    const game = loadActiveGame()
+    if (!game || !myMission) return
+
+    const claimedPlayerName = getClaimedPlayerName()
+    if (!claimedPlayerName) return
+
+    setEliminating(true)
+    setEliminationMessage(null)
+
+    try {
+      const targetNameNormalized = normalizeName(myMission.targetName)
+      const updatedState = await eliminateTarget(claimedPlayerName, targetNameNormalized)
+      
+      if (updatedState) {
+        // Update local mission
+        const newAssignment = updatedState.assignmentsByName[claimedPlayerName]
+        if (newAssignment) {
+          setMyMission(newAssignment)
+          setEliminationMessage(t.instructions.eliminationSuccess)
+          setTimeout(() => setEliminationMessage(null), 5000)
+        }
+      } else {
+        setEliminationMessage(t.instructions.eliminationError)
+        setTimeout(() => setEliminationMessage(null), 5000)
+      }
+    } catch (err) {
+      console.error('Error eliminating target:', err)
+      setEliminationMessage(t.instructions.eliminationError)
+      setTimeout(() => setEliminationMessage(null), 5000)
+    } finally {
+      setEliminating(false)
+    }
+  }
 
   return (
     <div className="h-screen overflow-hidden bg-gray-100 flex flex-col">
@@ -127,13 +242,31 @@ export default function HomePage() {
       <div className="bg-gray-800 px-6 py-4 flex-shrink-0">
         {mounted && hasActiveGame ? (
           <div className="space-y-3">
+            {eliminationMessage && (
+              <div className={`text-center text-lg font-semibold py-2 px-4 rounded-lg ${
+                eliminationMessage.includes('Error') || eliminationMessage.includes('Error')
+                  ? 'bg-red-100 text-red-800'
+                  : 'bg-green-100 text-green-800'
+              }`}>
+                {eliminationMessage}
+              </div>
+            )}
             {myMission && (
-              <button
-                onClick={() => setShowMission(true)}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-center text-2xl md:text-3xl font-bold py-4 px-8 rounded-lg transition-colors shadow-lg"
-              >
-                {t.instructions.viewMyMission}
-              </button>
+              <>
+                <button
+                  onClick={() => setShowMission(true)}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-center text-2xl md:text-3xl font-bold py-4 px-8 rounded-lg transition-colors shadow-lg"
+                >
+                  {t.instructions.viewMyMission}
+                </button>
+                <button
+                  onClick={handleEliminateTarget}
+                  disabled={eliminating}
+                  className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white text-center text-xl md:text-2xl font-bold py-3 px-8 rounded-lg transition-colors shadow-lg"
+                >
+                  {eliminating ? '...' : t.instructions.eliminateTarget}
+                </button>
+              </>
             )}
             <Link
               href="/kiosk"
@@ -226,5 +359,13 @@ export default function HomePage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<div className="h-screen flex items-center justify-center">Loading...</div>}>
+      <HomePageContent />
+    </Suspense>
   )
 }

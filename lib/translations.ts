@@ -35,6 +35,9 @@ export const translations = {
       createGame: 'Create Game (Host)',
       viewMyMission: 'View My Mission',
       yourMission: 'Your Mission',
+      eliminateTarget: 'I Eliminated My Target',
+      eliminationSuccess: 'Mission Updated! You now have your target\'s mission.',
+      eliminationError: 'Error updating mission. Please try again.',
     },
     // Host page
     host: {
@@ -127,6 +130,9 @@ export const translations = {
       createGame: 'Crear Juego (Host)',
       viewMyMission: 'Ver Mi Misión',
       yourMission: 'Tu Misión',
+      eliminateTarget: 'Eliminé a Mi Objetivo',
+      eliminationSuccess: '¡Misión Actualizada! Ahora tienes la misión de tu objetivo.',
+      eliminationError: 'Error al actualizar la misión. Por favor intenta de nuevo.',
     },
     // Host page
     host: {

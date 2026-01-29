@@ -212,23 +212,23 @@ export default function KioskPage() {
         <div className="bg-red-900/50 rounded-lg p-8 md:p-12 max-w-2xl w-full text-center space-y-8">
           <div className="bg-yellow-400 text-red-900 p-6 rounded-lg mb-8">
             <p className="text-3xl md:text-4xl font-bold">
-              ⚠️ Do NOT say it out loud.
+              ⚠️ {t.kiosk.doNotSay}
             </p>
           </div>
 
           <div className="space-y-6">
             <div>
-              <p className="text-2xl md:text-3xl text-red-200 mb-2">Your Target</p>
+              <p className="text-2xl md:text-3xl text-red-200 mb-2">{t.kiosk.yourTarget}</p>
               <p className="text-5xl md:text-7xl font-bold">{mission.targetName}</p>
             </div>
 
             <div>
-              <p className="text-2xl md:text-3xl text-red-200 mb-2">Room</p>
+              <p className="text-2xl md:text-3xl text-red-200 mb-2">{t.kiosk.room}</p>
               <p className="text-4xl md:text-6xl font-bold">{mission.room}</p>
             </div>
 
             <div>
-              <p className="text-2xl md:text-3xl text-red-200 mb-2">Object</p>
+              <p className="text-2xl md:text-3xl text-red-200 mb-2">{t.kiosk.object}</p>
               <p className="text-4xl md:text-6xl font-bold">{mission.object}</p>
             </div>
           </div>
@@ -237,7 +237,7 @@ export default function KioskPage() {
             onClick={handleHideMission}
             className="w-full bg-white text-red-600 text-3xl md:text-4xl font-bold py-8 px-8 rounded-lg hover:bg-gray-100 transition-colors mt-8"
           >
-            I memorized it
+            {t.kiosk.memorized}
           </button>
         </div>
 
@@ -246,7 +246,7 @@ export default function KioskPage() {
           onClick={() => setShowHostLink(true)}
           className="absolute bottom-4 left-4 text-white/50 hover:text-white text-sm underline"
         >
-          Return to Host
+          {t.kiosk.returnToHost}
         </button>
       </div>
     )
