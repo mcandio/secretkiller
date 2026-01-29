@@ -10,6 +10,7 @@ import {
   syncGameToServer 
 } from '@/lib/game'
 import { useRouter } from 'next/navigation'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface RoomEntryProps {
   onJoin?: () => void
@@ -17,6 +18,7 @@ interface RoomEntryProps {
 }
 
 export default function RoomEntry({ onJoin, initialRoomNumber }: RoomEntryProps) {
+  const { t } = useLanguage()
   const [roomNumber, setRoomNumber] = useState(initialRoomNumber || '')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -40,7 +42,7 @@ export default function RoomEntry({ onJoin, initialRoomNumber }: RoomEntryProps)
 
     const trimmed = (roomNum || roomNumber).trim()
     if (!trimmed || trimmed.length < 4) {
-      setError('Please enter a valid room number')
+      setError(t.roomEntry.invalidRoom)
       setLoading(false)
       return
     }
@@ -70,7 +72,7 @@ export default function RoomEntry({ onJoin, initialRoomNumber }: RoomEntryProps)
       }
       
       if (!gameState) {
-        setError('Room not found. Please check the room number.')
+        setError(t.roomEntry.roomNotFound)
         setLoading(false)
         return
       }
@@ -93,9 +95,9 @@ export default function RoomEntry({ onJoin, initialRoomNumber }: RoomEntryProps)
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6 md:p-8 max-w-md w-full">
-      <h2 className="text-2xl md:text-3xl font-bold mb-4 text-center">Enter Room Number</h2>
+      <h2 className="text-2xl md:text-3xl font-bold mb-4 text-center">{t.roomEntry.title}</h2>
       <p className="text-gray-600 mb-6 text-center">
-        Enter the room number provided by the host
+        {t.roomEntry.description}
       </p>
       
       <input
@@ -127,7 +129,7 @@ export default function RoomEntry({ onJoin, initialRoomNumber }: RoomEntryProps)
         disabled={roomNumber.length < 4 || loading}
         className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white text-xl font-bold py-4 px-6 rounded-lg transition-colors"
       >
-        {loading ? 'Joining...' : 'Join Room'}
+        {loading ? t.roomEntry.joining : t.roomEntry.joinRoom}
       </button>
     </div>
   )

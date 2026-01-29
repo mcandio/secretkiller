@@ -3,15 +3,17 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
+  const { t, language, setLanguage } = useLanguage()
 
   const menuItems = [
-    { href: '/', label: 'Instructions' },
-    { href: '/host', label: 'Host Setup' },
-    { href: '/kiosk', label: 'Kiosk Mode' },
+    { href: '/', label: t.nav.instructions },
+    { href: '/host', label: t.nav.hostSetup },
+    { href: '/kiosk', label: t.nav.kioskMode },
   ]
 
   return (
@@ -81,6 +83,39 @@ export default function Navigation() {
               )
             })}
           </nav>
+          
+          {/* Language Switcher */}
+          <div className="mt-6 pt-6 border-t border-gray-700">
+            <p className="text-sm text-gray-400 mb-2">Language / Idioma</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setLanguage('en')
+                  setIsOpen(false)
+                }}
+                className={`flex-1 px-3 py-2 rounded text-sm font-semibold transition-colors ${
+                  language === 'en'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-800 text-gray-200 hover:bg-gray-700'
+                }`}
+              >
+                English
+              </button>
+              <button
+                onClick={() => {
+                  setLanguage('es')
+                  setIsOpen(false)
+                }}
+                className={`flex-1 px-3 py-2 rounded text-sm font-semibold transition-colors ${
+                  language === 'es'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-800 text-gray-200 hover:bg-gray-700'
+                }`}
+              >
+                Español
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </>

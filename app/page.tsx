@@ -5,8 +5,10 @@ import Link from 'next/link'
 import { loadActiveGame } from '@/lib/game'
 import Navigation from '@/components/Navigation'
 import RoomEntry from '@/components/RoomEntry'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export default function HomePage() {
+  const { t } = useLanguage()
   const [hasActiveGame, setHasActiveGame] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [showRoomEntry, setShowRoomEntry] = useState(false)
@@ -24,10 +26,10 @@ export default function HomePage() {
       {/* Header */}
       <div className="bg-blue-700 text-white px-6 py-4 flex-shrink-0">
         <h1 className="text-3xl md:text-4xl font-bold text-center">
-          THE SECRET ASSASSIN GAME
+          {t.instructions.title}
         </h1>
         <p className="text-lg md:text-xl text-center mt-1 opacity-90">
-          (Chaotic but Chill)
+          {t.instructions.subtitle}
         </p>
       </div>
 
@@ -36,73 +38,72 @@ export default function HomePage() {
         <div className="h-full grid grid-cols-2 grid-rows-3 gap-2 md:gap-3">
           {/* Objective */}
           <div className="bg-white border-[3px] border-blue-600 rounded-lg p-3 md:p-4 flex flex-col shadow-lg overflow-hidden">
-            <h2 className="text-xl md:text-2xl font-bold mb-2 text-blue-900 flex-shrink-0">🎯 Objective</h2>
+            <h2 className="text-xl md:text-2xl font-bold mb-2 text-blue-900 flex-shrink-0">🎯 {t.instructions.objective}</h2>
             <p className="text-base md:text-lg leading-tight text-gray-900 flex-1 overflow-y-auto">
-              Eliminate your target by getting them into a specific room while holding a specific object.
+              {t.instructions.objectiveText}
             </p>
           </div>
 
           {/* What You Receive */}
           <div className="bg-yellow-50 border-[3px] border-yellow-600 rounded-lg p-3 md:p-4 flex flex-col shadow-lg overflow-hidden">
-            <h2 className="text-xl md:text-2xl font-bold mb-2 text-yellow-900 flex-shrink-0">📋 What You Receive</h2>
+            <h2 className="text-xl md:text-2xl font-bold mb-2 text-yellow-900 flex-shrink-0">📋 {t.instructions.whatYouReceive}</h2>
             <ul className="text-base md:text-lg leading-tight text-gray-900 space-y-1 flex-1 overflow-y-auto">
-              <li>• One target (guest)</li>
-              <li>• One room</li>
-              <li>• One object</li>
+              {t.instructions.whatYouReceiveItems.map((item, i) => (
+                <li key={i}>• {item}</li>
+              ))}
             </ul>
             <p className="text-sm md:text-base font-bold text-red-700 mt-2 flex-shrink-0">
-              ⚠️ Keep it SECRET!
+              ⚠️ {t.instructions.keepSecret}
             </p>
           </div>
 
           {/* How to Eliminate */}
           <div className="bg-green-50 border-[3px] border-green-600 rounded-lg p-3 md:p-4 flex flex-col shadow-lg overflow-hidden">
-            <h2 className="text-xl md:text-2xl font-bold mb-2 text-green-900 flex-shrink-0">⚔️ How to Eliminate</h2>
+            <h2 className="text-xl md:text-2xl font-bold mb-2 text-green-900 flex-shrink-0">⚔️ {t.instructions.howToEliminate}</h2>
             <div className="flex-1 overflow-y-auto">
               <p className="text-base md:text-lg leading-tight text-gray-900 mb-2">
-                When your target:
+                {t.instructions.whenTarget}
               </p>
               <ul className="text-base md:text-lg leading-tight text-gray-900 space-y-1 mb-2">
-                <li>• Enters the room</li>
-                <li>• While holding the object</li>
+                {t.instructions.eliminateItems.map((item, i) => (
+                  <li key={i}>• {item}</li>
+                ))}
               </ul>
               <p className="text-base md:text-lg font-bold text-red-700">
-                Say: "You're dead."
+                {t.instructions.sayDead}
               </p>
             </div>
           </div>
 
           {/* When Eliminated */}
           <div className="bg-purple-50 border-[3px] border-purple-600 rounded-lg p-3 md:p-4 flex flex-col shadow-lg overflow-hidden">
-            <h2 className="text-xl md:text-2xl font-bold mb-2 text-purple-900 flex-shrink-0">💀 When Eliminated</h2>
+            <h2 className="text-xl md:text-2xl font-bold mb-2 text-purple-900 flex-shrink-0">💀 {t.instructions.whenEliminated}</h2>
             <ul className="text-base md:text-lg leading-tight text-gray-900 space-y-1 flex-1 overflow-y-auto">
-              <li>• You're out</li>
-              <li>• Stop manipulating</li>
-              <li>• Don't reveal anything</li>
-              <li>• Killer gets your mission</li>
+              {t.instructions.eliminatedItems.map((item, i) => (
+                <li key={i}>• {item}</li>
+              ))}
             </ul>
           </div>
 
           {/* Rules */}
           <div className="bg-indigo-50 border-[3px] border-indigo-600 rounded-lg p-3 md:p-4 flex flex-col shadow-lg overflow-hidden">
-            <h2 className="text-xl md:text-2xl font-bold mb-2 text-indigo-900 flex-shrink-0">📜 Rules</h2>
+            <h2 className="text-xl md:text-2xl font-bold mb-2 text-indigo-900 flex-shrink-0">📜 {t.instructions.rules}</h2>
             <ul className="text-base md:text-lg leading-tight text-gray-900 space-y-1 flex-1 overflow-y-auto">
-              <li>• No physical force</li>
-              <li>• Don't say "for the game"</li>
-              <li>• No threats or pressure</li>
-              <li>• Keep it casual & natural</li>
+              {t.instructions.rulesItems.map((item, i) => (
+                <li key={i}>• {item}</li>
+              ))}
             </ul>
           </div>
 
           {/* Final Warning */}
           <div className="bg-red-100 border-[4px] border-red-700 rounded-lg p-3 md:p-4 flex flex-col shadow-lg overflow-hidden">
-            <h2 className="text-xl md:text-2xl font-bold mb-2 text-red-900 flex-shrink-0">⚠️ Final Warning</h2>
+            <h2 className="text-xl md:text-2xl font-bold mb-2 text-red-900 flex-shrink-0">⚠️ {t.instructions.finalWarning}</h2>
             <div className="flex-1 overflow-y-auto">
               <p className="text-2xl md:text-3xl font-bold text-red-900 mb-2">
-                TRUST NO ONE
+                {t.instructions.trustNoOne}
               </p>
               <p className="text-base md:text-lg leading-tight text-red-800">
-                If someone asks you to grab something or go somewhere, be suspicious.
+                {t.instructions.beSuspicious}
               </p>
             </div>
           </div>
@@ -116,7 +117,7 @@ export default function HomePage() {
             href="/kiosk"
             className="block w-full bg-green-600 hover:bg-green-700 text-white text-center text-2xl md:text-3xl font-bold py-4 px-8 rounded-lg transition-colors shadow-lg"
           >
-            Start Kiosk Mode
+            {t.instructions.startKiosk}
           </Link>
         ) : mounted ? (
           <div className="text-center space-y-3">
@@ -124,7 +125,7 @@ export default function HomePage() {
               onClick={() => setShowRoomEntry(true)}
               className="w-full bg-purple-600 hover:bg-purple-700 text-white text-xl font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg mb-2"
             >
-              Join Room
+              {t.instructions.joinRoom}
             </button>
             <p className="text-lg md:text-xl text-white">
               or
@@ -133,7 +134,7 @@ export default function HomePage() {
               href="/host"
               className="inline-block bg-blue-600 hover:bg-blue-700 text-white text-xl font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg"
             >
-              Create Game (Host)
+              {t.instructions.createGame}
             </Link>
           </div>
         ) : (

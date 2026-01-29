@@ -18,6 +18,7 @@ import RoomEntry from '@/components/RoomEntry'
 const INACTIVITY_TIMEOUT = 45000 // 45 seconds
 
 export default function KioskPage() {
+  const { t } = useLanguage()
   const [gameState, setGameState] = useState<GameStateV1 | null>(null)
   const [selectedName, setSelectedName] = useState<string>('')
   const [mission, setMission] = useState<Assignment | null>(null)
@@ -138,7 +139,7 @@ export default function KioskPage() {
     if (gameState?.hostPin && hostPinInput === gameState.hostPin) {
       window.location.href = '/host'
     } else {
-      setHostPinError('Incorrect PIN')
+      setHostPinError(t.kiosk.incorrectPin)
       setHostPinInput('')
     }
   }
@@ -195,8 +196,8 @@ export default function KioskPage() {
         onClick={() => setShowPrivacyShield(false)}
       >
         <div className="text-center">
-          <p className="text-4xl md:text-6xl font-bold mb-4">Privacy Shield</p>
-          <p className="text-2xl md:text-3xl">Tap to continue</p>
+          <p className="text-4xl md:text-6xl font-bold mb-4">{t.kiosk.privacyShield}</p>
+          <p className="text-2xl md:text-3xl">{t.kiosk.tapToContinue}</p>
         </div>
       </div>
     )
@@ -254,7 +255,7 @@ export default function KioskPage() {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 bg-black/50">
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
-          <h2 className="text-2xl font-bold mb-4">Enter Host PIN</h2>
+          <h2 className="text-2xl font-bold mb-4">{t.kiosk.enterHostPin}</h2>
           <input
             type="text"
             inputMode="numeric"
@@ -275,7 +276,7 @@ export default function KioskPage() {
             autoFocus
           />
           {hostPinError && (
-            <p className="text-red-600 text-center mb-4">{hostPinError}</p>
+            <p className="text-red-600 text-center mb-4">{t.kiosk.incorrectPin}</p>
           )}
           <div className="flex gap-4">
             <button
@@ -283,7 +284,7 @@ export default function KioskPage() {
               disabled={hostPinInput.length !== 4}
               className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white text-xl font-bold py-4 px-6 rounded-lg transition-colors"
             >
-              Verify
+              {t.host.verify}
             </button>
             <button
               onClick={() => {
@@ -293,7 +294,7 @@ export default function KioskPage() {
               }}
               className="flex-1 bg-gray-400 hover:bg-gray-500 text-white text-xl font-bold py-4 px-6 rounded-lg transition-colors"
             >
-              Cancel
+              {t.host.cancel}
             </button>
           </div>
         </div>
@@ -313,20 +314,20 @@ export default function KioskPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 text-white flex flex-col items-center justify-center p-6">
       <Navigation />
       <div className="bg-blue-900/50 rounded-lg p-8 md:p-12 max-w-2xl w-full text-center space-y-8">
-        <h1 className="text-4xl md:text-6xl font-bold mb-8">Choose Your Name</h1>
+        <h1 className="text-4xl md:text-6xl font-bold mb-8">{t.kiosk.chooseName}</h1>
 
         {availablePlayers.length === 0 ? (
           <div className="space-y-4">
-            <p className="text-2xl md:text-3xl">All players have claimed their missions!</p>
+            <p className="text-2xl md:text-3xl">{t.kiosk.allClaimed}</p>
             <p className="text-xl text-blue-200">
-              {claimedPlayers.length} / {gameState.players.length} claimed
+              {claimedPlayers.length} / {gameState.players.length} {t.host.claimed.toLowerCase()}
             </p>
           </div>
         ) : (
           <>
             <div className="space-y-4">
               <label className="block text-2xl md:text-3xl font-semibold mb-4">
-                Select your name:
+                {t.kiosk.selectName}
               </label>
               <select
                 value={selectedName}
@@ -334,7 +335,7 @@ export default function KioskPage() {
                 className="w-full p-6 text-3xl md:text-4xl text-gray-900 rounded-lg border-4 border-white font-bold"
                 size={Math.min(availablePlayers.length, 8)}
               >
-                <option value="">-- Choose --</option>
+                <option value="">{t.kiosk.choose}</option>
                 {availablePlayers.map((player) => (
                   <option key={player.nameNormalized} value={player.nameNormalized}>
                     {player.name}
@@ -348,24 +349,32 @@ export default function KioskPage() {
               disabled={!selectedName}
               className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-500 text-white text-4xl md:text-5xl font-bold py-10 px-8 rounded-lg transition-colors disabled:cursor-not-allowed"
             >
-              Reveal My Mission
+              {t.kiosk.revealMission}
             </button>
           </>
         )}
 
-        <div className="flex gap-4 mt-8">
-          <button
-            onClick={() => setShowPrivacyShield(true)}
-            className="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-xl font-semibold py-4 px-6 rounded-lg transition-colors"
+        <div className="flex flex-col gap-4 mt-8">
+          <Link
+            href="/"
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xl font-semibold py-4 px-6 rounded-lg transition-colors"
           >
-            Privacy Shield
-          </button>
-          <button
-            onClick={() => setShowHostLink(true)}
-            className="flex-1 bg-gray-600 hover:bg-gray-700 text-white text-xl font-semibold py-4 px-6 rounded-lg transition-colors"
-          >
-            Return to Host
-          </button>
+            {t.kiosk.viewInstructions}
+          </Link>
+          <div className="flex gap-4">
+            <button
+              onClick={() => setShowPrivacyShield(true)}
+              className="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-xl font-semibold py-4 px-6 rounded-lg transition-colors"
+            >
+              {t.kiosk.privacyShield}
+            </button>
+            <button
+              onClick={() => setShowHostLink(true)}
+              className="flex-1 bg-gray-600 hover:bg-gray-700 text-white text-xl font-semibold py-4 px-6 rounded-lg transition-colors"
+            >
+              {t.kiosk.returnToHost}
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -11,6 +11,7 @@ import {
   type GameStateV1,
 } from '@/lib/game'
 import Navigation from '@/components/Navigation'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 // Default content from rules.content
 const DEFAULT_ROOMS = [
@@ -42,6 +43,7 @@ const DEFAULT_OBJECTS = [
 ]
 
 export default function HostPage() {
+  const { t } = useLanguage()
   const [gameState, setGameState] = useState<GameStateV1 | null>(null)
   const [playerNames, setPlayerNames] = useState<string>('')
   const [rooms, setRooms] = useState<string>(DEFAULT_ROOMS.join('\n'))
@@ -100,7 +102,7 @@ export default function HostPage() {
       .filter((n) => n.length > 0)
     
     if (names.length < 3) {
-      setError('At least 3 players are required')
+      setError(t.host.atLeast3Players)
       return
     }
 
@@ -125,7 +127,7 @@ export default function HostPage() {
   }
 
   const handleReset = () => {
-    if (confirm('Are you sure you want to reset the game? This cannot be undone.')) {
+    if (confirm(t.host.resetConfirm)) {
       resetGame()
       setGameState(null)
       setError('')
@@ -148,7 +150,7 @@ export default function HostPage() {
       setPinInput('')
       setError('')
     } else {
-      setError('Incorrect PIN')
+      setError(t.kiosk.incorrectPin)
       setPinInput('')
     }
   }
@@ -163,7 +165,7 @@ export default function HostPage() {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
-          <h2 className="text-2xl font-bold mb-4">Enter Host PIN</h2>
+          <h2 className="text-2xl font-bold mb-4">{t.host.enterPin}</h2>
           <input
             type="text"
             inputMode="numeric"
@@ -185,7 +187,7 @@ export default function HostPage() {
             disabled={pinInput.length !== 4}
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white text-xl font-bold py-4 px-6 rounded-lg transition-colors"
           >
-            Verify
+            {t.host.verify}
           </button>
           {error && <p className="mt-4 text-red-600 text-center">{error}</p>}
         </div>
@@ -198,25 +200,26 @@ export default function HostPage() {
       <Navigation />
       <div className="bg-white rounded-lg shadow-lg p-8 md:p-12 space-y-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold">Host Setup</h1>
+          <h1 className="text-4xl md:text-5xl font-bold">{t.host.title}</h1>
         </div>
 
         {gameState ? (
           <div className="space-y-6">
             <div className="bg-green-50 border-2 border-green-300 rounded-lg p-6">
-              <h2 className="text-2xl font-bold mb-4">Game Status</h2>
+              <h2 className="text-2xl font-bold mb-4">{t.host.gameStatus}</h2>
               <div className="bg-blue-100 border-2 border-blue-500 rounded-lg p-4 mb-4">
-                <p className="text-sm font-semibold text-blue-900 mb-1">Room Number</p>
+                <p className="text-sm font-semibold text-blue-900 mb-1">{t.host.roomNumber}</p>
                 <p className="text-4xl font-bold text-blue-900 font-mono text-center">
                   {gameState.roomNumber}
                 </p>
                 <p className="text-sm text-blue-700 text-center mt-2">
-                  Share this number with players to join the game
+                  {t.host.shareLink}
                 </p>
                 <button
                   onClick={() => {
                     if (typeof window !== 'undefined') {
-                      navigator.clipboard.writeText(gameState.roomNumber).then(() => {
+                      const roomLink = `${window.location.origin}/?room=${gameState.roomNumber}`
+                      navigator.clipboard.writeText(roomLink).then(() => {
                         setCopied(true)
                         setTimeout(() => setCopied(false), 2000)
                       })
@@ -224,18 +227,18 @@ export default function HostPage() {
                   }}
                   className="w-full mt-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
                 >
-                  {copied ? '✓ Copied!' : 'Copy Room Number'}
+                  {copied ? t.host.linkCopied : t.host.copyLink}
                 </button>
               </div>
               <p className="text-xl mb-2">
-                Game ID: <span className="font-mono text-sm">{gameState.gameId}</span>
+                {t.host.gameId}: <span className="font-mono text-sm">{gameState.gameId}</span>
               </p>
               <p className="text-xl mb-4">
-                Claimed: <span className="font-bold">{claimedCount} / {totalPlayers}</span>
+                {t.host.claimed}: <span className="font-bold">{claimedCount} / {totalPlayers}</span>
               </p>
               
               <div className="mt-4">
-                <h3 className="text-lg font-semibold mb-2">Players:</h3>
+                <h3 className="text-lg font-semibold mb-2">{t.host.players}:</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {gameState.players.map((player) => {
                     const claimed = gameState.claimedByName[player.nameNormalized]
@@ -248,7 +251,7 @@ export default function HostPage() {
                       >
                         <span className="font-semibold">{player.name}</span>
                         {claimed && (
-                          <span className="ml-2 text-green-700 font-bold">✓ Claimed</span>
+                          <span className="ml-2 text-green-700 font-bold">{t.host.claimedBadge}</span>
                         )}
                       </div>
                     )
@@ -262,19 +265,19 @@ export default function HostPage() {
                 href="/kiosk"
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-center text-2xl font-bold py-6 px-8 rounded-lg transition-colors"
               >
-                Kiosk Mode
+                {t.host.kioskMode}
               </Link>
               <button
                 onClick={handleCopyKioskLink}
                 className="flex-1 bg-gray-600 hover:bg-gray-700 text-white text-center text-xl font-semibold py-6 px-8 rounded-lg transition-colors"
               >
-                {copied ? '✓ Copied!' : 'Copy Kiosk Link'}
+                {copied ? '✓ Copied!' : t.host.copyKioskLink}
               </button>
               <button
                 onClick={handleReset}
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white text-center text-xl font-semibold py-6 px-8 rounded-lg transition-colors"
               >
-                Reset Game
+                {t.host.resetGame}
               </button>
             </div>
           </div>
@@ -282,7 +285,7 @@ export default function HostPage() {
           <div className="space-y-6">
             <div>
               <label className="block text-xl font-semibold mb-2">
-                Player Names (one per line, minimum 3)
+                {t.host.playerNamesLabel}
               </label>
               <textarea
                 value={playerNames}
@@ -294,7 +297,7 @@ export default function HostPage() {
 
             <div>
               <label className="block text-xl font-semibold mb-2">
-                Rooms (one per line)
+                {t.host.roomsLabel}
               </label>
               <textarea
                 value={rooms}
@@ -306,7 +309,7 @@ export default function HostPage() {
 
             <div>
               <label className="block text-xl font-semibold mb-2">
-                Objects (one per line)
+                {t.host.objectsLabel}
               </label>
               <textarea
                 value={objects}
@@ -318,7 +321,7 @@ export default function HostPage() {
 
             <div>
               <label className="block text-xl font-semibold mb-2">
-                Host PIN (optional, 4 digits - protects host access from kiosk)
+                {t.host.hostPinLabel}
               </label>
               <input
                 type="text"
@@ -342,7 +345,7 @@ export default function HostPage() {
               onClick={handleGenerate}
               className="w-full bg-green-600 hover:bg-green-700 text-white text-3xl font-bold py-8 px-8 rounded-lg transition-colors"
             >
-              Generate Game
+              {t.host.generateGame}
             </button>
           </div>
         )}
