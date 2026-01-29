@@ -1,0 +1,115 @@
+# Game Content Rules – Rooms, Objects & Instructions
+
+This file defines the default game content for the "Secret Assassin" party app.
+These values should be used as pre-filled defaults on the Host setup page.
+The host may edit them before generating the game.
+
+---
+
+## Default Rooms
+
+Use these rooms as selectable locations for assignments.
+Rooms may repeat if the number of players exceeds the number of rooms.
+
+Rooms list:
+- bedroom
+- marcelo's office
+- mariel's office
+- living room
+- kitchen
+- bathroom
+- hallway
+
+Notes:
+- Repeating rooms is allowed and intentional.
+- Prefer repeating neutral rooms (hallway, living room) over private ones when possible.
+- Do not block gameplay if rooms < number of players.
+
+---
+
+## Default Objects
+
+Objects must be common household items.
+They should be easy to pick up naturally and not raise suspicion.
+
+Objects list:
+- phone
+- keys
+- glass
+- cup
+- bottle
+- napkin
+- book
+- shoe
+- jacket
+- pillow
+- remote control
+- charger
+- wallet
+- notebook
+- pen
+
+Rules:
+- Objects may repeat if the list is shorter than the number of players.
+- Avoid fragile or dangerous objects.
+- Avoid objects that are permanently attached to a room.
+
+---
+
+## Player Instructions (English)
+
+Title:
+THE SECRET ASSASSIN GAME (Chaotic but Chill)
+
+Objective:
+Each player has a secret mission.
+Your goal is to eliminate your assigned target by naturally persuading them to enter a specific room while holding a specific object.
+
+What You Receive:
+You will secretly receive:
+- One target (another guest)
+- One room
+- One object
+
+This information is private. Do not show it to anyone.
+
+How to Eliminate Someone:
+If your target:
+- Enters the assigned room
+- While holding the assigned object
+
+You may clearly say:
+"You're dead."
+
+At that moment, the elimination is valid.
+
+What Happens When You’re Eliminated:
+- You are out of the game.
+- You must stop trying to manipulate other players.
+- You may not reveal who killed you or what your mission was.
+- The player who eliminated you inherits your mission and continues playing.
+
+End of the Game:
+The game ends when:
+- Only one player remains alive, or
+- The host decides to end the game.
+
+Rules:
+- No physical force.
+- Do not say "this is for the game".
+- Do not threaten or pressure anyone.
+- Do not show messages, screens, or notes.
+- Everything must feel casual and natural.
+
+Final Warning:
+Trust no one.
+If someone asks you to grab something or go somewhere, be suspicious.
+
+---
+
+## Implementation Notes (for the app)
+
+- Pre-fill the Host setup form with the default rooms and objects above.
+- Allow the host to edit, add, or remove items.
+- Do not regenerate assignments once a game is created.
+- Use these values only as defaults; game state must be persisted.

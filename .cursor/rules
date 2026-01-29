@@ -1,0 +1,162 @@
+# .cursor/rules.md
+
+You are building a small web app to orchestrate a party game called "Secret Assassin".
+This version is optimized for SINGLE-DEVICE KIOSK MODE (iPad + Chrome). Players do NOT use their own phones.
+
+## Tech constraints
+- Use Next.js (App Router) + TypeScript.
+- Minimal dependencies (prefer none).
+- Styling: Tailwind or basic CSS.
+- No backend. Persist state in browser storage (localStorage + optional cookie flag).
+- Must be resilient to refresh and accidental navigation.
+- No database. No auth.
+
+## Routes
+- /host  => host setup + game status + reset
+- /kiosk => iPad “player terminal” flow (main gameplay reveal)
+- /      => player-facing instructions page (read-only) + a link/button to /kiosk (optional)
+
+## Core behavior (Kiosk first)
+### 1) Host setup page (/host)
+Host can configure:
+- player names (N players; minimum 3; recommend 6-14)
+- rooms list (editable)
+- objects list (editable)
+Host clicks "Generate Game".
+
+Generation rules:
+- Create a gameId: `${Date.now()}-${randomBase36(6)}`
+- Assign targets via a derangement (no one targets themselves).
+- Assign rooms and objects:
+  - Shuffle each list.
+  - If list length >= N: assign unique entries to each player.
+  - If list length < N: cycle through the shuffled list; distribute repeats evenly.
+Persist a single game state object in localStorage:
+- `sa_game_state_v1:<gameId>`
+Also store:
+- `sa_active_game_id_v1` => gameId
+
+Host tools:
+- Show game status:
+  - claimed count / total
+  - table of names with claimed badge
+- "Reset Game" button:
+  - wipes active game + state from localStorage
+- "Kiosk Mode" button:
+  - navigates to /kiosk
+- "Copy Kiosk Link" button:
+  - copies `/kiosk` URL
+
+### 2) Kiosk page (/kiosk) - CRITICAL
+This is the iPad screen guests will use one by one.
+
+Flow:
+1. "Choose your name" (big UI)
+   - Show dropdown list of players.
+   - Disable names that are already claimed.
+2. Player taps "Reveal my mission"
+   - Show mission card FULLSCREEN:
+     - Target name
+     - Room
+     - Object
+   - Big warning: "Do NOT say it out loud."
+3. Player taps "I memorized it" (or "Hide mission")
+   - Mission disappears immediately
+   - Mark claimedByName[nameNormalized] = true in game state
+   - Return to name selection screen
+   - Clear any in-memory mission data from React state
+4. Once claimed, a player must never be able to reveal again unless host resets.
+
+Extra kiosk protections (best-effort):
+- Add a "Privacy Shield" overlay button:
+  - Toggles a full-screen dark overlay with text "Tap to continue"
+  - Useful between players while passing the iPad around
+- Add an inactivity timer:
+  - If mission is visible and no interaction for 45 seconds, auto-hide and return to selection
+- Prevent accidental back navigation:
+  - If mission is visible, show a confirm dialog on navigation attempts (best-effort)
+- Provide "Return to Host" link (small, bottom corner), but require a simple PIN gate:
+  - Host sets a 4-digit PIN on /host (stored in localStorage as part of game state)
+  - Access to host controls from /kiosk requires entering PIN
+  - (This is not security, but prevents accidental tapping)
+
+### 3) Player instructions page (/)
+- Display the full English instructions.
+- Provide a button "Start Kiosk Mode" that links to /kiosk.
+- If no active game exists, show:
+  - "Host needs to create a game first. Go to /host."
+
+## Persistence rules (critical)
+- The app must NEVER regenerate assignments if an active game exists.
+- On load:
+  - If `sa_active_game_id_v1` exists and state exists => use it.
+  - Else show friendly empty state + link to /host.
+- All localStorage reads/writes must be try/catch guarded and handle quota errors.
+- Kiosk page must read the game state fresh after any claim to avoid race issues.
+
+## Data model (TypeScript)
+Create types in /lib/game.ts:
+- Player: { name: string; nameNormalized: string }
+- Assignment: { targetName: string; room: string; object: string }
+- GameStateV1:
+  - version: "v1"
+  - gameId: string
+  - createdAt: number
+  - hostPin?: string // 4 digits, optional
+  - players: Player[]
+  - rooms: string[]
+  - objects: string[]
+  - assignmentsByName: Record<string, Assignment> // key=nameNormalized
+  - claimedByName: Record<string, boolean>
+
+Helpers:
+- normalizeName(s): string  // trim, lowercase, collapse whitespace
+- derangement(names: string[]): string[] // robust for N>=3
+- shuffle<T>(arr: T[]): T[]
+- loadActiveGame(): GameStateV1 | null
+- saveGame(state: GameStateV1): void
+- resetGame(): void
+- markClaimed(nameNormalized: string): GameStateV1 // updates + persists
+
+## Fair assignment requirements
+- Derangement must guarantee no self-target.
+- Implement with a real algorithm (e.g., Sattolo variant adapted, or shuffle-with-retry with capped attempts + fallback swap fix).
+- Must work reliably for N >= 3. For N < 3 show validation error.
+
+## UI/UX requirements
+- Mobile-first but tuned for iPad: large text, large buttons, generous spacing.
+- Use cards and clear headings.
+- /kiosk must be usable standing at a table in a party environment:
+  - Huge CTA buttons
+  - Minimal text clutter
+  - Obvious "Hide mission" action
+
+## English instructions text to include on /
+Title: "THE SECRET ASSASSIN GAME (Chaotic but Chill)"
+Include:
+- Objective
+- What you receive
+- How to eliminate someone ("You're dead.")
+- What happens when you're eliminated (out, no revealing, killer inherits mission)
+- End of the game
+- Rules (no force, no "for the game", no showing)
+- Final warning (trust no one)
+
+## Deliverables
+- Next.js structure:
+  - /app/page.tsx (instructions)
+  - /app/host/page.tsx (host setup + status + reset + PIN set)
+  - /app/kiosk/page.tsx (kiosk flow)
+  - /lib/game.ts (logic + persistence)
+  - /components/* (UI components)
+- Must run with:
+  - npm install
+  - npm run dev
+
+## Quality bar
+- Clean, typed, commented code.
+- Handle edge cases:
+  - duplicate names (case-insensitive)
+  - empty rooms/objects list
+  - N mismatch, N<3
+  - refresh mid-mission (should return to safe state without re-showing mission)
