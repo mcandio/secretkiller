@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { loadActiveGame } from '@/lib/game'
+import { loadActiveGame, getClaimedPlayerName, type Assignment } from '@/lib/game'
 import Navigation from '@/components/Navigation'
 import RoomEntry from '@/components/RoomEntry'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -12,11 +12,24 @@ export default function HomePage() {
   const [hasActiveGame, setHasActiveGame] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [showRoomEntry, setShowRoomEntry] = useState(false)
+  const [showMission, setShowMission] = useState(false)
+  const [myMission, setMyMission] = useState<Assignment | null>(null)
 
   useEffect(() => {
     setMounted(true)
     const game = loadActiveGame()
     setHasActiveGame(game !== null)
+    
+    // Check if there's a claimed player and load their mission
+    if (game) {
+      const claimedPlayerName = getClaimedPlayerName()
+      if (claimedPlayerName) {
+        const assignment = game.assignmentsByName[claimedPlayerName]
+        if (assignment) {
+          setMyMission(assignment)
+        }
+      }
+    }
   }, [])
 
   return (
@@ -113,12 +126,22 @@ export default function HomePage() {
       {/* Footer with CTA */}
       <div className="bg-gray-800 px-6 py-4 flex-shrink-0">
         {mounted && hasActiveGame ? (
-          <Link
-            href="/kiosk"
-            className="block w-full bg-green-600 hover:bg-green-700 text-white text-center text-2xl md:text-3xl font-bold py-4 px-8 rounded-lg transition-colors shadow-lg"
-          >
-            {t.instructions.startKiosk}
-          </Link>
+          <div className="space-y-3">
+            {myMission && (
+              <button
+                onClick={() => setShowMission(true)}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-center text-2xl md:text-3xl font-bold py-4 px-8 rounded-lg transition-colors shadow-lg"
+              >
+                {t.instructions.viewMyMission}
+              </button>
+            )}
+            <Link
+              href="/kiosk"
+              className="block w-full bg-green-600 hover:bg-green-700 text-white text-center text-2xl md:text-3xl font-bold py-4 px-8 rounded-lg transition-colors shadow-lg"
+            >
+              {t.instructions.startKiosk}
+            </Link>
+          </div>
         ) : mounted ? (
           <div className="text-center space-y-3">
             <button
@@ -143,6 +166,50 @@ export default function HomePage() {
           </div>
         )}
       </div>
+
+      {/* Mission View Modal */}
+      {showMission && myMission && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gradient-to-br from-red-600 to-red-800 text-white rounded-lg p-8 md:p-12 max-w-2xl w-full text-center space-y-8 relative">
+            <button
+              onClick={() => setShowMission(false)}
+              className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white rounded-full w-10 h-10 flex items-center justify-center text-2xl font-bold"
+            >
+              ×
+            </button>
+            
+            <div className="bg-yellow-400 text-red-900 p-6 rounded-lg mb-8">
+              <p className="text-3xl md:text-4xl font-bold">
+                ⚠️ {t.kiosk.doNotSay}
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <p className="text-2xl md:text-3xl text-red-200 mb-2">{t.kiosk.yourTarget}</p>
+                <p className="text-5xl md:text-7xl font-bold">{myMission.targetName}</p>
+              </div>
+
+              <div>
+                <p className="text-2xl md:text-3xl text-red-200 mb-2">{t.kiosk.room}</p>
+                <p className="text-4xl md:text-6xl font-bold">{myMission.room}</p>
+              </div>
+
+              <div>
+                <p className="text-2xl md:text-3xl text-red-200 mb-2">{t.kiosk.object}</p>
+                <p className="text-4xl md:text-6xl font-bold">{myMission.object}</p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowMission(false)}
+              className="w-full bg-white text-red-600 text-2xl md:text-3xl font-bold py-6 px-8 rounded-lg hover:bg-gray-100 transition-colors mt-8"
+            >
+              {t.kiosk.memorized}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Room Entry Modal */}
       {showRoomEntry && (

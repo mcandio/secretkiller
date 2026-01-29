@@ -36,6 +36,7 @@ export type RoomConfig = {
 // Storage keys
 const ACTIVE_GAME_KEY = "sa_active_game_id_v1";
 const ACTIVE_ROOM_KEY = "sa_active_room_v1";
+const CLAIMED_PLAYER_KEY = "sa_claimed_player_v1"; // Store which player claimed on this device
 const GAME_STATE_PREFIX = "sa_game_state_v1:";
 const ROOM_CONFIG_PREFIX = "sa_room_config_v1:";
 
@@ -257,6 +258,9 @@ export function resetGame(): void {
     if (activeRoom) {
       localStorage.removeItem(ACTIVE_ROOM_KEY);
     }
+    
+    // Clear claimed player
+    clearClaimedPlayer();
   } catch (error) {
     console.error("Error resetting game:", error);
   }
@@ -391,10 +395,39 @@ export async function markClaimed(nameNormalized: string): Promise<GameStateV1 |
   state.claimedByName[nameNormalized] = true;
   saveGame(state);
   
+  // Store which player claimed on this device
+  try {
+    localStorage.setItem(CLAIMED_PLAYER_KEY, nameNormalized);
+  } catch (error) {
+    console.error('Error saving claimed player:', error);
+  }
+  
   // Sync to server
   await markClaimedOnServer(state.roomNumber, nameNormalized);
   
   return state;
+}
+
+/**
+ * Get the player name that was claimed on this device
+ */
+export function getClaimedPlayerName(): string | null {
+  try {
+    return localStorage.getItem(CLAIMED_PLAYER_KEY);
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
+ * Clear the claimed player (when game is reset)
+ */
+export function clearClaimedPlayer(): void {
+  try {
+    localStorage.removeItem(CLAIMED_PLAYER_KEY);
+  } catch (error) {
+    console.error('Error clearing claimed player:', error);
+  }
 }
 
 /**

@@ -33,6 +33,8 @@ export const translations = {
       goToHost: 'Go to Host Setup',
       joinRoom: 'Join Room',
       createGame: 'Create Game (Host)',
+      viewMyMission: 'View My Mission',
+      yourMission: 'Your Mission',
     },
     // Host page
     host: {
@@ -123,6 +125,8 @@ export const translations = {
       goToHost: 'Ir a Configuración del Host',
       joinRoom: 'Unirse a Sala',
       createGame: 'Crear Juego (Host)',
+      viewMyMission: 'Ver Mi Misión',
+      yourMission: 'Tu Misión',
     },
     // Host page
     host: {

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   loadActiveGame,
   loadGameByRoom,
@@ -14,11 +15,13 @@ import {
 } from '@/lib/game'
 import Navigation from '@/components/Navigation'
 import RoomEntry from '@/components/RoomEntry'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 const INACTIVITY_TIMEOUT = 45000 // 45 seconds
 
 export default function KioskPage() {
   const { t } = useLanguage()
+  const router = useRouter()
   const [gameState, setGameState] = useState<GameStateV1 | null>(null)
   const [selectedName, setSelectedName] = useState<string>('')
   const [mission, setMission] = useState<Assignment | null>(null)
@@ -80,10 +83,9 @@ export default function KioskPage() {
       setGameState(updatedState)
     }
 
-    // Clear mission and selection
-    setMission(null)
-    setSelectedName('')
-  }, [gameState, selectedName])
+    // Redirect to instructions page
+    router.push('/')
+  }, [gameState, selectedName, router])
 
   useEffect(() => {
     // Clear any existing timer
