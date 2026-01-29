@@ -4,8 +4,11 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
   loadActiveGame,
+  loadGameFromServer,
   resetGame,
   generateGame,
+  saveGame,
+  syncGameToServer,
   type GameStateV1,
 } from '@/lib/game'
 import Navigation from '@/components/Navigation'
@@ -61,7 +64,35 @@ export default function HostPage() {
     }
   }, [])
 
-  const handleGenerate = () => {
+  // Poll server for updates when game is active
+  useEffect(() => {
+    if (!gameState?.roomNumber) return
+
+    // Poll server every 2 seconds for updates
+    const pollInterval = setInterval(async () => {
+      try {
+        const serverState = await loadGameFromServer(gameState.roomNumber)
+        if (serverState) {
+          // Merge server state (prioritize server's claimed state)
+          const mergedState = {
+            ...serverState,
+            claimedByName: {
+              ...gameState.claimedByName,
+              ...serverState.claimedByName, // Server claims override local
+            },
+          }
+          setGameState(mergedState)
+          saveGame(mergedState)
+        }
+      } catch (error) {
+        console.error('Error polling server:', error)
+      }
+    }, 2000) // Poll every 2 seconds
+
+    return () => clearInterval(pollInterval)
+  }, [gameState?.roomNumber])
+
+  const handleGenerate = async () => {
     setError('')
     
     const names = playerNames
@@ -87,6 +118,10 @@ export default function HostPage() {
     try {
       const pin = hostPin.trim().length === 4 ? hostPin.trim() : undefined
       const newState = generateGame(names, roomsList, objectsList, pin)
+      
+      // Sync to server
+      await syncGameToServer(newState)
+      
       setGameState(newState)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate game')
@@ -174,6 +209,28 @@ export default function HostPage() {
           <div className="space-y-6">
             <div className="bg-green-50 border-2 border-green-300 rounded-lg p-6">
               <h2 className="text-2xl font-bold mb-4">Game Status</h2>
+              <div className="bg-blue-100 border-2 border-blue-500 rounded-lg p-4 mb-4">
+                <p className="text-sm font-semibold text-blue-900 mb-1">Room Number</p>
+                <p className="text-4xl font-bold text-blue-900 font-mono text-center">
+                  {gameState.roomNumber}
+                </p>
+                <p className="text-sm text-blue-700 text-center mt-2">
+                  Share this number with players to join the game
+                </p>
+                <button
+                  onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      navigator.clipboard.writeText(gameState.roomNumber).then(() => {
+                        setCopied(true)
+                        setTimeout(() => setCopied(false), 2000)
+                      })
+                    }
+                  }}
+                  className="w-full mt-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                >
+                  {copied ? '✓ Copied!' : 'Copy Room Number'}
+                </button>
+              </div>
               <p className="text-xl mb-2">
                 Game ID: <span className="font-mono text-sm">{gameState.gameId}</span>
               </p>

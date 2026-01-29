@@ -4,10 +4,12 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { loadActiveGame } from '@/lib/game'
 import Navigation from '@/components/Navigation'
+import RoomEntry from '@/components/RoomEntry'
 
 export default function HomePage() {
   const [hasActiveGame, setHasActiveGame] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [showRoomEntry, setShowRoomEntry] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -118,14 +120,20 @@ export default function HomePage() {
           </Link>
         ) : mounted ? (
           <div className="text-center space-y-3">
+            <button
+              onClick={() => setShowRoomEntry(true)}
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white text-xl font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg mb-2"
+            >
+              Join Room
+            </button>
             <p className="text-lg md:text-xl text-white">
-              Host needs to create a game first.
+              or
             </p>
             <Link
               href="/host"
               className="inline-block bg-blue-600 hover:bg-blue-700 text-white text-xl font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg"
             >
-              Go to Host Setup
+              Create Game (Host)
             </Link>
           </div>
         ) : (
@@ -134,6 +142,21 @@ export default function HomePage() {
           </div>
         )}
       </div>
+
+      {/* Room Entry Modal */}
+      {showRoomEntry && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="relative">
+            <button
+              onClick={() => setShowRoomEntry(false)}
+              className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-700"
+            >
+              ×
+            </button>
+            <RoomEntry />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

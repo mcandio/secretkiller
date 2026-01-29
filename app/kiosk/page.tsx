@@ -4,11 +4,16 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import {
   loadActiveGame,
+  loadGameByRoom,
+  loadGameFromServer,
   markClaimed,
+  saveGame,
+  syncGameToServer,
   type GameStateV1,
   type Assignment,
 } from '@/lib/game'
 import Navigation from '@/components/Navigation'
+import RoomEntry from '@/components/RoomEntry'
 
 const INACTIVITY_TIMEOUT = 45000 // 45 seconds
 
@@ -18,16 +23,49 @@ export default function KioskPage() {
   const [mission, setMission] = useState<Assignment | null>(null)
   const [showPrivacyShield, setShowPrivacyShield] = useState(false)
   const [showHostLink, setShowHostLink] = useState(false)
+  const [showRoomEntry, setShowRoomEntry] = useState(false)
   const [hostPinInput, setHostPinInput] = useState('')
   const [hostPinError, setHostPinError] = useState('')
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     const state = loadActiveGame()
-    setGameState(state)
+    if (!state) {
+      setShowRoomEntry(true)
+    } else {
+      setGameState(state)
+    }
   }, [])
 
-  const handleHideMission = useCallback(() => {
+  // Poll server for updates
+  useEffect(() => {
+    if (!gameState?.roomNumber) return
+
+    // Poll server every 2 seconds for updates
+    const pollInterval = setInterval(async () => {
+      try {
+        const serverState = await loadGameFromServer(gameState.roomNumber)
+        if (serverState) {
+          // Merge server state (prioritize server's claimed state)
+          const mergedState = {
+            ...serverState,
+            claimedByName: {
+              ...gameState.claimedByName,
+              ...serverState.claimedByName, // Server claims override local
+            },
+          }
+          setGameState(mergedState)
+          saveGame(mergedState)
+        }
+      } catch (error) {
+        console.error('Error polling server:', error)
+      }
+    }, 2000) // Poll every 2 seconds
+
+    return () => clearInterval(pollInterval)
+  }, [gameState?.roomNumber])
+
+  const handleHideMission = useCallback(async () => {
     if (!gameState || !selectedName) return
 
     const player = gameState.players.find(
@@ -35,8 +73,8 @@ export default function KioskPage() {
     )
     if (!player) return
 
-    // Mark as claimed
-    const updatedState = markClaimed(player.nameNormalized)
+    // Mark as claimed (now syncs to server)
+    const updatedState = await markClaimed(player.nameNormalized)
     if (updatedState) {
       setGameState(updatedState)
     }
@@ -105,6 +143,22 @@ export default function KioskPage() {
     }
   }
 
+  // Room entry screen
+  if (showRoomEntry) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-blue-600 to-blue-800">
+        <Navigation />
+        <RoomEntry 
+          onJoin={() => {
+            const state = loadActiveGame()
+            setGameState(state)
+            setShowRoomEntry(false)
+          }}
+        />
+      </div>
+    )
+  }
+
   if (!gameState) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
@@ -112,14 +166,22 @@ export default function KioskPage() {
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
           <h2 className="text-3xl font-bold mb-4">No Active Game</h2>
           <p className="text-xl text-gray-600 mb-6">
-            Host needs to create a game first.
+            Please join a room or create a game.
           </p>
-          <Link
-            href="/host"
-            className="inline-block bg-blue-600 hover:bg-blue-700 text-white text-xl font-semibold py-4 px-8 rounded-lg transition-colors"
-          >
-            Go to Host Setup
-          </Link>
+          <div className="space-y-3">
+            <button
+              onClick={() => setShowRoomEntry(true)}
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white text-xl font-semibold py-4 px-8 rounded-lg transition-colors"
+            >
+              Join Room
+            </button>
+            <Link
+              href="/host"
+              className="inline-block w-full bg-blue-600 hover:bg-blue-700 text-white text-xl font-semibold py-4 px-8 rounded-lg transition-colors"
+            >
+              Create Game (Host)
+            </Link>
+          </div>
         </div>
       </div>
     )
