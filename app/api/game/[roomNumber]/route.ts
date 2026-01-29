@@ -132,3 +132,26 @@ export async function PATCH(
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { roomNumber: string } }
+) {
+  try {
+    const roomNumber = params.roomNumber
+    const redisClient = getRedis()
+    
+    // Delete from Redis
+    if (redisClient) {
+      await redisClient.del(`game:${roomNumber}`)
+    } else {
+      // Delete from in-memory
+      gameStates.delete(roomNumber)
+    }
+    
+    return NextResponse.json({ success: true, message: 'Game state deleted' })
+  } catch (error) {
+    console.error('Error deleting game state:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}

@@ -270,6 +270,72 @@ export function resetGame(): void {
 }
 
 /**
+ * Flush/clear all game data from localStorage
+ * Removes all game states, room configs, and related data
+ */
+export function flushDatabase(): void {
+  try {
+    // Clear all game states
+    const keys = Object.keys(localStorage);
+    keys.forEach((key) => {
+      if (
+        key.startsWith(GAME_STATE_PREFIX) ||
+        key.startsWith(ROOM_CONFIG_PREFIX) ||
+        key === ACTIVE_GAME_KEY ||
+        key === ACTIVE_ROOM_KEY ||
+        key === CLAIMED_PLAYER_KEY
+      ) {
+        localStorage.removeItem(key);
+      }
+    });
+  } catch (error) {
+    console.error("Error flushing database:", error);
+  }
+}
+
+/**
+ * Mark player as dead (eliminated by someone else)
+ */
+export async function markPlayerAsDead(
+  playerNameNormalized: string
+): Promise<GameStateV1 | null> {
+  const state = loadActiveGame();
+  if (!state) {
+    return null;
+  }
+
+  // Check if player exists
+  const player = state.players.find((p) => p.nameNormalized === playerNameNormalized);
+  if (!player) {
+    throw new Error("Player not found in game");
+  }
+
+  // Check if already eliminated
+  const alreadyEliminated = Object.values(state.eliminations || {}).includes(playerNameNormalized);
+  if (alreadyEliminated) {
+    return state; // Already marked as dead
+  }
+
+  // Mark as eliminated (we'll use a special marker to indicate self-reported death)
+  // For now, we'll just mark them in eliminations with a special key
+  if (!state.eliminations) {
+    state.eliminations = {};
+  }
+  
+  // Find who should have eliminated them (their target's target, or mark as self-eliminated)
+  // For simplicity, we'll mark them as eliminated by themselves (self-reported)
+  state.eliminations[`dead_${playerNameNormalized}`] = playerNameNormalized;
+
+  // Save locally
+  saveGame(state);
+
+  // Sync to server
+  await syncEliminationToServer(state.roomNumber, `dead_${playerNameNormalized}`, playerNameNormalized);
+
+  return state;
+}
+
+/**
  * Sync room config to server
  */
 export async function syncRoomConfigToServer(config: RoomConfig): Promise<boolean> {

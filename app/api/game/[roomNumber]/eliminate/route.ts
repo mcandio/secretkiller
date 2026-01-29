@@ -75,10 +75,15 @@ export async function POST(
       return NextResponse.json({ error: 'Target not found in game' }, { status: 400 })
     }
 
-    // Verify that the target is actually the killer's target
-    const killerTargetNormalized = normalizeName(killerAssignment.targetName)
-    if (killerTargetNormalized !== targetNameNormalized) {
-      return NextResponse.json({ error: 'Target is not the killer\'s assigned target' }, { status: 400 })
+    // Check if this is a self-reported death (starts with "dead_")
+    const isSelfReportedDeath = killerNameNormalized.startsWith('dead_')
+    
+    if (!isSelfReportedDeath) {
+      // Verify that the target is actually the killer's target
+      const killerTargetNormalized = normalizeName(killerAssignment.targetName)
+      if (killerTargetNormalized !== targetNameNormalized) {
+        return NextResponse.json({ error: 'Target is not the killer\'s assigned target' }, { status: 400 })
+      }
     }
 
     // Check if target was already eliminated
@@ -90,12 +95,15 @@ export async function POST(
     // Record the elimination
     state.eliminations[killerNameNormalized] = targetNameNormalized
 
-    // Inherit the target's mission
-    // The killer's new target becomes the eliminated target's target
-    state.assignmentsByName[killerNameNormalized] = {
-      targetName: targetAssignment.targetName,
-      room: targetAssignment.room,
-      object: targetAssignment.object,
+    // Only inherit mission if not self-reported death
+    if (!isSelfReportedDeath) {
+      // Inherit the target's mission
+      // The killer's new target becomes the eliminated target's target
+      state.assignmentsByName[killerNameNormalized] = {
+        targetName: targetAssignment.targetName,
+        room: targetAssignment.room,
+        object: targetAssignment.object,
+      }
     }
 
     // Save back

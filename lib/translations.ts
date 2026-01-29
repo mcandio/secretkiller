@@ -40,6 +40,13 @@ export const translations = {
       eliminationError: 'Error updating mission. Please try again.',
       roomChangeIn: 'Room changes in',
       seconds: 'seconds',
+      imDead: "I'm Dead",
+      markedAsDead: 'You have been marked as dead.',
+      flushDatabase: 'Clear All Data',
+      flushConfirm: 'Are you sure you want to clear all game data? This will remove all games, rooms, and player data.',
+      flushSuccess: 'All data cleared successfully.',
+      clearCache: 'Clear Cache',
+      clearCacheBeforeJoin: 'Clear cache before joining?',
     },
     // Host page
     host: {
@@ -140,6 +147,13 @@ export const translations = {
       eliminationError: 'Error al actualizar la misión. Por favor intenta de nuevo.',
       roomChangeIn: 'La habitación cambia en',
       seconds: 'segundos',
+      imDead: 'Estoy Muerto',
+      markedAsDead: 'Has sido marcado como muerto.',
+      flushDatabase: 'Limpiar Todos los Datos',
+      flushConfirm: '¿Estás seguro de que quieres limpiar todos los datos del juego? Esto eliminará todos los juegos, salas y datos de jugadores.',
+      flushSuccess: 'Todos los datos han sido limpiados exitosamente.',
+      clearCache: 'Limpiar Caché',
+      clearCacheBeforeJoin: '¿Limpiar caché antes de unirse?',
     },
     // Host page
     host: {

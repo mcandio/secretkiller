@@ -7,7 +7,8 @@ import {
   loadRoomConfigFromServer,
   generateGameFromConfig,
   saveGame, 
-  syncGameToServer 
+  syncGameToServer,
+  flushDatabase
 } from '@/lib/game'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -22,6 +23,7 @@ export default function RoomEntry({ onJoin, initialRoomNumber }: RoomEntryProps)
   const [roomNumber, setRoomNumber] = useState(initialRoomNumber || '')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [clearCache, setClearCache] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -45,6 +47,11 @@ export default function RoomEntry({ onJoin, initialRoomNumber }: RoomEntryProps)
       setError(t.roomEntry.invalidRoom)
       setLoading(false)
       return
+    }
+
+    // Clear cache if requested
+    if (clearCache) {
+      flushDatabase()
     }
 
     try {
@@ -123,6 +130,19 @@ export default function RoomEntry({ onJoin, initialRoomNumber }: RoomEntryProps)
       {error && (
         <p className="text-red-600 text-center mb-4">{error}</p>
       )}
+
+      <div className="mb-4 flex items-center">
+        <input
+          type="checkbox"
+          id="clearCache"
+          checked={clearCache}
+          onChange={(e) => setClearCache(e.target.checked)}
+          className="w-5 h-5 mr-2"
+        />
+        <label htmlFor="clearCache" className="text-sm text-gray-700">
+          {t.instructions.clearCache}
+        </label>
+      </div>
       
       <button
         onClick={() => handleJoinRoom()}

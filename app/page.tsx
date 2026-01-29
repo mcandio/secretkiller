@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { loadActiveGame, getClaimedPlayerName, type Assignment, type CurrentAssignment, loadGameFromServer, loadRoomConfigFromServer, generateGameFromConfig, saveGame, syncGameToServer, loadGameByRoom, eliminateTarget, normalizeName, getCurrentAssignment, getTimeUntilNextRoomChange } from '@/lib/game'
+import { loadActiveGame, getClaimedPlayerName, type Assignment, type CurrentAssignment, loadGameFromServer, loadRoomConfigFromServer, generateGameFromConfig, saveGame, syncGameToServer, loadGameByRoom, eliminateTarget, normalizeName, getCurrentAssignment, getTimeUntilNextRoomChange, markPlayerAsDead, flushDatabase } from '@/lib/game'
 import Navigation from '@/components/Navigation'
 import RoomEntry from '@/components/RoomEntry'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -35,6 +35,10 @@ function HomePageContent() {
         if (currentAssignment) {
           setMyMission(currentAssignment)
         }
+        
+        // Initialize time until next room change
+        const timeUntil = getTimeUntilNextRoomChange(game)
+        setTimeUntilRoomChange(timeUntil)
       }
     }
 
@@ -53,10 +57,14 @@ function HomePageContent() {
               setMyMission(currentAssignment)
               setHasActiveGame(true)
             }
+            
+            // Update time until next room change
+            const timeUntil = getTimeUntilNextRoomChange(serverState)
+            setTimeUntilRoomChange(timeUntil)
           }
         }
       }
-    }, 2000)
+    }, 1000) // Poll every second for smoother timer updates
 
     // Check for room parameter in URL and auto-join
     if (typeof window !== 'undefined' && !game && !joiningRoom) {
@@ -149,6 +157,45 @@ function HomePageContent() {
     }
   }
 
+  const handleMarkAsDead = async () => {
+    const game = loadActiveGame()
+    if (!game) return
+
+    const claimedPlayerName = getClaimedPlayerName()
+    if (!claimedPlayerName) return
+
+    if (!confirm('Are you sure you want to mark yourself as dead?')) {
+      return
+    }
+
+    try {
+      const updatedState = await markPlayerAsDead(claimedPlayerName)
+      if (updatedState) {
+        setEliminationMessage(t.instructions.markedAsDead)
+        setTimeout(() => setEliminationMessage(null), 5000)
+        // Clear mission since player is dead
+        setMyMission(null)
+      }
+    } catch (err) {
+      console.error('Error marking as dead:', err)
+      setEliminationMessage('Error marking as dead')
+      setTimeout(() => setEliminationMessage(null), 5000)
+    }
+  }
+
+  const handleFlushDatabase = () => {
+    if (confirm(t.instructions.flushConfirm)) {
+      flushDatabase()
+      setHasActiveGame(false)
+      setMyMission(null)
+      setEliminationMessage(t.instructions.flushSuccess)
+      setTimeout(() => {
+        setEliminationMessage(null)
+        window.location.reload()
+      }, 2000)
+    }
+  }
+
   return (
     <div className="h-screen overflow-hidden bg-gray-100 flex flex-col">
       <Navigation />
@@ -165,6 +212,14 @@ function HomePageContent() {
 
       {/* Instructions Grid - fits iPad Pro 11 screen */}
       <div className="flex-1 overflow-hidden p-3 md:p-4">
+        {/* Timer for room change - show at top if active */}
+        {mounted && hasActiveGame && myMission && timeUntilRoomChange !== null && timeUntilRoomChange > 0 && (
+          <div className="bg-yellow-100 border-2 border-yellow-500 rounded-lg p-3 mb-3 text-center shadow-lg">
+            <p className="text-xl md:text-2xl font-bold text-yellow-900">
+              ⏱️ {t.instructions.roomChangeIn} {Math.ceil(timeUntilRoomChange / 1000)} {t.instructions.seconds}
+            </p>
+          </div>
+        )}
         <div className="h-full grid grid-cols-2 grid-rows-3 gap-2 md:gap-3">
           {/* Objective */}
           <div className="bg-white border-[3px] border-blue-600 rounded-lg p-3 md:p-4 flex flex-col shadow-lg overflow-hidden">
@@ -268,6 +323,12 @@ function HomePageContent() {
                 >
                   {eliminating ? '...' : t.instructions.eliminateTarget}
                 </button>
+                <button
+                  onClick={handleMarkAsDead}
+                  className="w-full bg-gray-600 hover:bg-gray-700 text-white text-center text-xl md:text-2xl font-bold py-3 px-8 rounded-lg transition-colors shadow-lg"
+                >
+                  💀 {t.instructions.imDead}
+                </button>
               </>
             )}
             <Link
@@ -280,10 +341,21 @@ function HomePageContent() {
         ) : mounted ? (
           <div className="text-center space-y-3">
             <button
-              onClick={() => setShowRoomEntry(true)}
+              onClick={() => {
+                if (confirm(t.instructions.clearCacheBeforeJoin)) {
+                  flushDatabase()
+                }
+                setShowRoomEntry(true)
+              }}
               className="w-full bg-purple-600 hover:bg-purple-700 text-white text-xl font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg mb-2"
             >
               {t.instructions.joinRoom}
+            </button>
+            <button
+              onClick={handleFlushDatabase}
+              className="w-full bg-orange-600 hover:bg-orange-700 text-white text-sm font-semibold py-2 px-4 rounded-lg transition-colors shadow-lg"
+            >
+              {t.instructions.flushDatabase}
             </button>
             <p className="text-lg md:text-xl text-white">
               or

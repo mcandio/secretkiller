@@ -8,6 +8,7 @@ import {
   resetGame,
   generateGame,
   saveGame,
+  flushDatabase,
   type GameStateV1,
 } from '@/lib/game'
 import Navigation from '@/components/Navigation'
@@ -139,6 +140,28 @@ export default function HostPage() {
       resetGame()
       setGameState(null)
       setError('')
+    }
+  }
+
+  const handleFlushDatabase = async () => {
+    if (confirm(t.instructions.flushConfirm)) {
+      // Clear local storage
+      flushDatabase()
+      
+      // Clear server state if game exists
+      if (gameState?.roomNumber) {
+        try {
+          await fetch(`/api/game/${gameState.roomNumber}`, { method: 'DELETE' })
+          await fetch(`/api/room/${gameState.roomNumber}`, { method: 'DELETE' })
+        } catch (err) {
+          console.error('Error clearing server state:', err)
+        }
+      }
+      
+      setGameState(null)
+      setError('')
+      alert(t.instructions.flushSuccess)
+      window.location.reload()
     }
   }
 
@@ -297,6 +320,12 @@ export default function HostPage() {
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white text-center text-xl font-semibold py-6 px-8 rounded-lg transition-colors"
               >
                 {t.host.resetGame}
+              </button>
+              <button
+                onClick={handleFlushDatabase}
+                className="flex-1 bg-orange-600 hover:bg-orange-700 text-white text-center text-xl font-semibold py-6 px-8 rounded-lg transition-colors"
+              >
+                {t.instructions.flushDatabase}
               </button>
             </div>
           </div>

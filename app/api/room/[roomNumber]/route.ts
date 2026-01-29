@@ -90,3 +90,26 @@ export async function POST(
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { roomNumber: string } }
+) {
+  try {
+    const roomNumber = params.roomNumber
+    const redisClient = getRedis()
+    
+    // Delete from Redis
+    if (redisClient) {
+      await redisClient.del(`room:${roomNumber}`)
+    } else {
+      // Delete from in-memory
+      roomConfigs.delete(roomNumber)
+    }
+    
+    return NextResponse.json({ success: true, message: 'Room config deleted' })
+  } catch (error) {
+    console.error('Error deleting room config:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
