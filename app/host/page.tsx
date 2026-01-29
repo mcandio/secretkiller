@@ -8,6 +8,7 @@ import {
   generateGame,
   type GameStateV1,
 } from '@/lib/game'
+import Navigation from '@/components/Navigation'
 
 // Default content from rules.content
 const DEFAULT_ROOMS = [
@@ -44,7 +45,7 @@ export default function HostPage() {
   const [rooms, setRooms] = useState<string>(DEFAULT_ROOMS.join('\n'))
   const [objects, setObjects] = useState<string>(DEFAULT_OBJECTS.join('\n'))
   const [hostPin, setHostPin] = useState<string>('')
-  const [showPinInput, setShowPinInput] = useState(false)
+  const [pinVerified, setPinVerified] = useState(false)
   const [pinInput, setPinInput] = useState('')
   const [error, setError] = useState<string>('')
   const [copied, setCopied] = useState(false)
@@ -52,6 +53,12 @@ export default function HostPage() {
   useEffect(() => {
     const state = loadActiveGame()
     setGameState(state)
+    // If there's a PIN, require verification
+    if (state?.hostPin) {
+      setPinVerified(false)
+    } else {
+      setPinVerified(true) // No PIN means no verification needed
+    }
   }, [])
 
   const handleGenerate = () => {
@@ -106,8 +113,9 @@ export default function HostPage() {
 
   const handlePinCheck = () => {
     if (gameState?.hostPin && pinInput === gameState.hostPin) {
-      setShowPinInput(false)
+      setPinVerified(true)
       setPinInput('')
+      setError('')
     } else {
       setError('Incorrect PIN')
       setPinInput('')
@@ -120,7 +128,7 @@ export default function HostPage() {
   const totalPlayers = gameState?.players.length || 0
 
   // If there's a PIN and we haven't verified it, show PIN input
-  if (gameState?.hostPin && !showPinInput && pinInput === '') {
+  if (gameState?.hostPin && !pinVerified) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
@@ -156,15 +164,10 @@ export default function HostPage() {
 
   return (
     <div className="min-h-screen p-6 md:p-12 max-w-6xl mx-auto">
+      <Navigation />
       <div className="bg-white rounded-lg shadow-lg p-8 md:p-12 space-y-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-4xl md:text-5xl font-bold">Host Setup</h1>
-          <Link
-            href="/"
-            className="text-blue-600 hover:text-blue-800 text-lg underline"
-          >
-            ← Instructions
-          </Link>
         </div>
 
         {gameState ? (

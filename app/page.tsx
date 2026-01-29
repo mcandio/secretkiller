@@ -1,118 +1,138 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { loadActiveGame } from '@/lib/game'
+import Navigation from '@/components/Navigation'
 
 export default function HomePage() {
-  const hasActiveGame = typeof window !== 'undefined' && loadActiveGame() !== null
+  const [hasActiveGame, setHasActiveGame] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+    const game = loadActiveGame()
+    setHasActiveGame(game !== null)
+  }, [])
 
   return (
-    <div className="min-h-screen p-6 md:p-12 max-w-4xl mx-auto">
-      <div className="bg-white rounded-lg shadow-lg p-8 md:p-12 space-y-8">
-        <h1 className="text-4xl md:text-5xl font-bold text-center mb-8">
+    <div className="h-screen overflow-hidden bg-gray-100 flex flex-col">
+      <Navigation />
+      
+      {/* Header */}
+      <div className="bg-blue-700 text-white px-6 py-4 flex-shrink-0">
+        <h1 className="text-3xl md:text-4xl font-bold text-center">
           THE SECRET ASSASSIN GAME
         </h1>
-        <p className="text-xl md:text-2xl text-center text-gray-600 mb-12">
+        <p className="text-lg md:text-xl text-center mt-1 opacity-90">
           (Chaotic but Chill)
         </p>
+      </div>
 
-        <div className="space-y-6 text-lg md:text-xl leading-relaxed">
-          <section>
-            <h2 className="text-2xl md:text-3xl font-bold mb-4">Objective</h2>
-            <p>
-              Each player has a secret mission. Your goal is to eliminate your assigned target by naturally persuading them to enter a specific room while holding a specific object.
+      {/* Instructions Grid - fits iPad Pro 11 screen */}
+      <div className="flex-1 overflow-hidden p-3 md:p-4">
+        <div className="h-full grid grid-cols-2 grid-rows-3 gap-2 md:gap-3">
+          {/* Objective */}
+          <div className="bg-white border-[3px] border-blue-600 rounded-lg p-3 md:p-4 flex flex-col shadow-lg overflow-hidden">
+            <h2 className="text-xl md:text-2xl font-bold mb-2 text-blue-900 flex-shrink-0">🎯 Objective</h2>
+            <p className="text-base md:text-lg leading-tight text-gray-900 flex-1 overflow-y-auto">
+              Eliminate your target by getting them into a specific room while holding a specific object.
             </p>
-          </section>
+          </div>
 
-          <section>
-            <h2 className="text-2xl md:text-3xl font-bold mb-4">What You Receive</h2>
-            <p>You will secretly receive:</p>
-            <ul className="list-disc list-inside ml-4 mt-2 space-y-2">
-              <li>One target (another guest)</li>
-              <li>One room</li>
-              <li>One object</li>
+          {/* What You Receive */}
+          <div className="bg-yellow-50 border-[3px] border-yellow-600 rounded-lg p-3 md:p-4 flex flex-col shadow-lg overflow-hidden">
+            <h2 className="text-xl md:text-2xl font-bold mb-2 text-yellow-900 flex-shrink-0">📋 What You Receive</h2>
+            <ul className="text-base md:text-lg leading-tight text-gray-900 space-y-1 flex-1 overflow-y-auto">
+              <li>• One target (guest)</li>
+              <li>• One room</li>
+              <li>• One object</li>
             </ul>
-            <p className="mt-4 font-semibold text-red-600">
-              This information is private. Do not show it to anyone.
+            <p className="text-sm md:text-base font-bold text-red-700 mt-2 flex-shrink-0">
+              ⚠️ Keep it SECRET!
             </p>
-          </section>
+          </div>
 
-          <section>
-            <h2 className="text-2xl md:text-3xl font-bold mb-4">How to Eliminate Someone</h2>
-            <p>If your target:</p>
-            <ul className="list-disc list-inside ml-4 mt-2 space-y-2">
-              <li>Enters the assigned room</li>
-              <li>While holding the assigned object</li>
-            </ul>
-            <p className="mt-4">
-              You may clearly say: <span className="font-bold text-red-600">"You're dead."</span>
-            </p>
-            <p className="mt-2">At that moment, the elimination is valid.</p>
-          </section>
-
-          <section>
-            <h2 className="text-2xl md:text-3xl font-bold mb-4">What Happens When You're Eliminated</h2>
-            <ul className="list-disc list-inside ml-4 space-y-2">
-              <li>You are out of the game.</li>
-              <li>You must stop trying to manipulate other players.</li>
-              <li>You may not reveal who killed you or what your mission was.</li>
-              <li>The player who eliminated you inherits your mission and continues playing.</li>
-            </ul>
-          </section>
-
-          <section>
-            <h2 className="text-2xl md:text-3xl font-bold mb-4">End of the Game</h2>
-            <p>The game ends when:</p>
-            <ul className="list-disc list-inside ml-4 mt-2 space-y-2">
-              <li>Only one player remains alive, or</li>
-              <li>The host decides to end the game.</li>
-            </ul>
-          </section>
-
-          <section>
-            <h2 className="text-2xl md:text-3xl font-bold mb-4">Rules</h2>
-            <ul className="list-disc list-inside ml-4 space-y-2">
-              <li>No physical force.</li>
-              <li>Do not say "this is for the game".</li>
-              <li>Do not threaten or pressure anyone.</li>
-              <li>Do not show messages, screens, or notes.</li>
-              <li>Everything must feel casual and natural.</li>
-            </ul>
-          </section>
-
-          <section className="bg-red-50 border-2 border-red-300 rounded-lg p-6">
-            <h2 className="text-2xl md:text-3xl font-bold mb-4 text-red-700">Final Warning</h2>
-            <p className="text-xl md:text-2xl font-semibold text-red-800">
-              Trust no one.
-            </p>
-            <p className="mt-2 text-lg">
-              If someone asks you to grab something or go somewhere, be suspicious.
-            </p>
-          </section>
-        </div>
-
-        <div className="mt-12 pt-8 border-t">
-          {hasActiveGame ? (
-            <Link
-              href="/kiosk"
-              className="block w-full bg-blue-600 hover:bg-blue-700 text-white text-center text-2xl md:text-3xl font-bold py-6 px-8 rounded-lg transition-colors"
-            >
-              Start Kiosk Mode
-            </Link>
-          ) : (
-            <div className="text-center space-y-4">
-              <p className="text-xl text-gray-600">
-                Host needs to create a game first.
+          {/* How to Eliminate */}
+          <div className="bg-green-50 border-[3px] border-green-600 rounded-lg p-3 md:p-4 flex flex-col shadow-lg overflow-hidden">
+            <h2 className="text-xl md:text-2xl font-bold mb-2 text-green-900 flex-shrink-0">⚔️ How to Eliminate</h2>
+            <div className="flex-1 overflow-y-auto">
+              <p className="text-base md:text-lg leading-tight text-gray-900 mb-2">
+                When your target:
               </p>
-              <Link
-                href="/host"
-                className="inline-block bg-gray-600 hover:bg-gray-700 text-white text-xl font-semibold py-4 px-8 rounded-lg transition-colors"
-              >
-                Go to Host Setup
-              </Link>
+              <ul className="text-base md:text-lg leading-tight text-gray-900 space-y-1 mb-2">
+                <li>• Enters the room</li>
+                <li>• While holding the object</li>
+              </ul>
+              <p className="text-base md:text-lg font-bold text-red-700">
+                Say: "You're dead."
+              </p>
             </div>
-          )}
+          </div>
+
+          {/* When Eliminated */}
+          <div className="bg-purple-50 border-[3px] border-purple-600 rounded-lg p-3 md:p-4 flex flex-col shadow-lg overflow-hidden">
+            <h2 className="text-xl md:text-2xl font-bold mb-2 text-purple-900 flex-shrink-0">💀 When Eliminated</h2>
+            <ul className="text-base md:text-lg leading-tight text-gray-900 space-y-1 flex-1 overflow-y-auto">
+              <li>• You're out</li>
+              <li>• Stop manipulating</li>
+              <li>• Don't reveal anything</li>
+              <li>• Killer gets your mission</li>
+            </ul>
+          </div>
+
+          {/* Rules */}
+          <div className="bg-indigo-50 border-[3px] border-indigo-600 rounded-lg p-3 md:p-4 flex flex-col shadow-lg overflow-hidden">
+            <h2 className="text-xl md:text-2xl font-bold mb-2 text-indigo-900 flex-shrink-0">📜 Rules</h2>
+            <ul className="text-base md:text-lg leading-tight text-gray-900 space-y-1 flex-1 overflow-y-auto">
+              <li>• No physical force</li>
+              <li>• Don't say "for the game"</li>
+              <li>• No threats or pressure</li>
+              <li>• Keep it casual & natural</li>
+            </ul>
+          </div>
+
+          {/* Final Warning */}
+          <div className="bg-red-100 border-[4px] border-red-700 rounded-lg p-3 md:p-4 flex flex-col shadow-lg overflow-hidden">
+            <h2 className="text-xl md:text-2xl font-bold mb-2 text-red-900 flex-shrink-0">⚠️ Final Warning</h2>
+            <div className="flex-1 overflow-y-auto">
+              <p className="text-2xl md:text-3xl font-bold text-red-900 mb-2">
+                TRUST NO ONE
+              </p>
+              <p className="text-base md:text-lg leading-tight text-red-800">
+                If someone asks you to grab something or go somewhere, be suspicious.
+              </p>
+            </div>
+          </div>
         </div>
+      </div>
+
+      {/* Footer with CTA */}
+      <div className="bg-gray-800 px-6 py-4 flex-shrink-0">
+        {mounted && hasActiveGame ? (
+          <Link
+            href="/kiosk"
+            className="block w-full bg-green-600 hover:bg-green-700 text-white text-center text-2xl md:text-3xl font-bold py-4 px-8 rounded-lg transition-colors shadow-lg"
+          >
+            Start Kiosk Mode
+          </Link>
+        ) : mounted ? (
+          <div className="text-center space-y-3">
+            <p className="text-lg md:text-xl text-white">
+              Host needs to create a game first.
+            </p>
+            <Link
+              href="/host"
+              className="inline-block bg-blue-600 hover:bg-blue-700 text-white text-xl font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg"
+            >
+              Go to Host Setup
+            </Link>
+          </div>
+        ) : (
+          <div className="text-center">
+            <p className="text-lg md:text-xl text-white">Loading...</p>
+          </div>
+        )}
       </div>
     </div>
   )

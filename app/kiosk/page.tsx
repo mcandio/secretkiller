@@ -8,6 +8,7 @@ import {
   type GameStateV1,
   type Assignment,
 } from '@/lib/game'
+import Navigation from '@/components/Navigation'
 
 const INACTIVITY_TIMEOUT = 45000 // 45 seconds
 
@@ -107,6 +108,7 @@ export default function KioskPage() {
   if (!gameState) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
+        <Navigation />
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
           <h2 className="text-3xl font-bold mb-4">No Active Game</h2>
           <p className="text-xl text-gray-600 mb-6">
@@ -247,6 +249,7 @@ export default function KioskPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 text-white flex flex-col items-center justify-center p-6">
+      <Navigation />
       <div className="bg-blue-900/50 rounded-lg p-8 md:p-12 max-w-2xl w-full text-center space-y-8">
         <h1 className="text-4xl md:text-6xl font-bold mb-8">Choose Your Name</h1>
 
